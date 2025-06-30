@@ -1,141 +1,133 @@
 const express = require('express');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 中間件設置
+// 中間件
 app.use(cors());
 app.use(express.json());
 
-// 速率限制
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分鐘
-  max: 100, // 每15分鐘最多100次請求
-  message: {
-    error: '請求過於頻繁，請稍後再試'
-  }
-});
-
-app.use('/api/', limiter);
-
-// API Key 驗證中間件
+// API Key 認證中間件
 const authenticateApiKey = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
-  
-  if (!apiKey) {
-    return res.status(401).json({ 
-      error: '需要提供 API Key',
-      message: '請在請求標頭中包含 x-api-key' 
-    });
+  if (apiKey && apiKey === process.env.SERVER_API_KEY) {
+    next();
+  } else {
+    res.status(401).json({ error: '未授權 - 無效的 API Key' });
   }
-  
-  // 這裡可以實現更複雜的 API Key 驗證邏輯
-  const validApiKeys = process.env.VALID_API_KEYS ? 
-    process.env.VALID_API_KEYS.split(',') : ['default-key'];
-  
-  if (!validApiKeys.includes(apiKey)) {
-    return res.status(401).json({ 
-      error: '無效的 API Key' 
-    });
-  }
-  
-  next();
 };
 
 // 健康檢查端點
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    service: 'Gemini API Key Server'
-  });
-});
-
-// 獲取 Gemini API Key
-app.get('/api/gemini-key', authenticateApiKey, (req, res) => {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  
-  if (!geminiApiKey) {
-    return res.status(500).json({ 
-      error: '伺服器配置錯誤',
-      message: 'Gemini API Key 未設置' 
-    });
-  }
-  
-  res.json({ 
-    apiKey: geminiApiKey,
-    provider: 'Google Gemini',
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'AngelReading API Server is running.',
     timestamp: new Date().toISOString()
   });
 });
 
-// Gemini API 代理端點
-app.post('/api/gemini/generate', authenticateApiKey, async (req, res) => {
+// Gemini API Key 提供端點
+app.get('/api/gemini-key', authenticateApiKey, (req, res) => {
+  res.json({ apiKey: process.env.GEMINI_API_KEY });
+});
+
+// 測驗生成引擎端點
+app.post('/api/generate-exam', authenticateApiKey, async (req, res) => {
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
-    const { 
-      model = 'gemini-pro', 
-      prompt, 
-      maxTokens = 1000,
-      temperature = 0.7 
-    } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ 
-        error: '缺少必要參數',
-        message: '請提供 prompt 參數' 
-      });
+    // 1. Get request body
+    const { examType = 'TOEIC', difficulty = 'medium' } = req.body;
+
+    if (!examType || !difficulty) {
+        return res.status(400).json({ 
+            error: 'Missing parameters',
+            message: 'Please provide examType and difficulty.' 
+        });
     }
+
+    // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
+    const prompt = `
+You are an expert English test creator for various exams like ${examType}.
+Your task is to generate a complete reading comprehension test based on these parameters:
+- Exam Type: ${examType}
+- Difficulty Level: ${difficulty}
+
+Please generate a reading passage of about 200-300 words.
+After the passage, create exactly 5 multiple-choice questions related to the passage.
+Each question must have 4 options.
+
+The entire response MUST be a single, minified, valid JSON object.
+Do not include any markdown fences like \`\`\`json or any other explanatory text.
+The JSON object must strictly follow this structure:
+{
+  "passage": "The full reading passage text here.",
+  "questions": [
+    { "id": 1, "questionText": "Question 1...", "options": ["A", "B", "C", "D"], "correctAnswer": "A" },
+    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B" },
+    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C" },
+    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D" },
+    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A" }
+  ]
+}
+`;
     
-    const geminiModel = genAI.getGenerativeModel({ model });
-    const result = await geminiModel.generateContent(prompt);
+    // 3. Call Gemini API - using flash for cost-effectiveness and speed
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' }); 
+    const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
-    
-    res.json({
-      success: true,
-      response: text,
-      model: model,
-      timestamp: new Date().toISOString()
-    });
-    
+    let text = response.text();
+
+    // 4. Parse and respond
+    // Clean potential markdown fences just in case the AI doesn't follow instructions perfectly
+    text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
+
+    try {
+        const jsonResponse = JSON.parse(text);
+        // Send the parsed JSON directly to the iOS app
+        res.json(jsonResponse); 
+    } catch (parseError) {
+        console.error('JSON parsing error:', parseError);
+        console.error('Raw text from Gemini:', text);
+        return res.status(500).json({ 
+            error: 'Failed to parse response from AI',
+            message: 'The AI did not return valid JSON.',
+            rawResponse: text // Sending raw response for debugging can be helpful
+        });
+    }
+
   } catch (error) {
-    console.error('Gemini API 錯誤:', error);
+    console.error('Gemini API Error:', error);
     res.status(500).json({ 
-      error: '生成內容失敗',
+      error: 'Failed to generate content',
       message: error.message 
     });
   }
 });
 
+
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    error: '伺服器內部錯誤',
-    message: '請稍後再試' 
-  });
+  res.status(500).send('伺服器發生錯誤');
 });
 
-// 404 處理
+// 404 Not Found 處理
 app.use('*', (req, res) => {
   res.status(404).json({ 
     error: '找不到請求的資源',
     availableEndpoints: [
       'GET /health',
       'GET /api/gemini-key',
-      'POST /api/gemini/generate'
+      'POST /api/generate-exam'
     ]
   });
 });
 
 // 啟動伺服器
 app.listen(PORT, () => {
-  console.log(`伺服器運行在端口 ${PORT}`);
-  console.log(`健康檢查: http://localhost:${PORT}/health`);
+  console.log(`伺服器正在監聽 port ${PORT}`);
 });
