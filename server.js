@@ -86,6 +86,9 @@ Your task is to generate a complete reading comprehension test based on these pa
 - Difficulty Level: ${difficulty}
 
 Please generate a reading passage of about 200-300 words.
+Each paragraph MUST start with two spaces for indentation.
+Paragraphs MUST be separated by a single blank line.
+
 After the passage, create exactly 5 multiple-choice questions related to the passage.
 Each question must have 4 options.
 
