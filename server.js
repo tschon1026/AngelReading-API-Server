@@ -99,14 +99,14 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **Passage Length:** Strictly 300-450 words.
+- **Passage Length:** Strictly 250-350 words.
 - **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
 `;
             break;
         case '大學學測':
             examSpecificInstructions = `
 **Exam-Specific Rules for 大學學測:**
-- **Passage Length:** Strictly 300-450 words.
+- **Passage Length:** Strictly 300-400 words.
 - **Content Focus:** The passage should be relatively long and complex.
 - **Question Focus:** Design questions to test the student's ability to comprehend, analyze, and synthesize information from a long-form article. Questions should require a deep understanding of the text.
 `;
@@ -142,13 +142,13 @@ Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension 
 ${examSpecificInstructions}
 
 **Critically Important Passage Writing Rules:**
-1.  **NO CLICHÉ OPENINGS:** You are strictly forbidden from starting the passage with common, overused phrases such as "Imagine...", "In a world...", "Picture this...", or any similar cliché. The opening must be direct and engaging.
-2.  **DIVERSE OPENING STYLES:** Start the passage with one of the following techniques:
-    *   A surprising statistic or fact.
-    *   A direct, declarative statement that introduces the topic.
-    *   A relevant historical context.
-    *   An impactful quote (if relevant to the topic).
-    *   A question to the reader that will be answered in the passage.
+1.  **NO CLICHÉ OPENINGS:** You are strictly forbidden from starting the passage with common, overused phrases such as "Do you know...", "Have you ever wondered...", "Imagine...", "In a world...", "Picture this...", or any similar cliché. The opening must be direct, academic, and engaging.
+2.  **DIVERSE OPENING STYLES:** Start the passage using one of these specific, academic techniques:
+    *   A surprising statistic or a compelling piece of data.
+    *   A direct, declarative statement that authoritatively introduces the topic's core thesis.
+    *   A relevant historical context that sets the stage for the main subject.
+    *   An impactful, and attributed, quote from a known expert in the field (if relevant).
+    *   Present a common misconception and then state that the passage will clarify it.
 3.  **ORIGINALITY IS KEY:** This must be a COMPLETELY NEW and ORIGINAL passage. Do not reuse any content from previous generations. Focus specifically on the topic: "${selectedTopic}" and make it relevant to ${examType} exam standards.
 
 Please generate the reading passage following the rules above.
