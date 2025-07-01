@@ -92,6 +92,41 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
     ];
     
     const selectedTopic = topicVariations[randomSeed % topicVariations.length];
+
+    // 2. 動態生成特定考試類型的說明
+    let examSpecificInstructions = '';
+    switch (examType) {
+        case '國中會考':
+            examSpecificInstructions = `
+**Exam-Specific Rules for 國中會考:**
+- **Passage Length:** Strictly 300-450 words.
+- **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
+`;
+            break;
+        case '高中學測':
+            examSpecificInstructions = `
+**Exam-Specific Rules for 高中學測:**
+- **Passage Length:** Strictly 300-450 words.
+- **Content Focus:** The passage should be relatively long and complex.
+- **Question Focus:** Design questions to test the student's ability to comprehend, analyze, and synthesize information from a long-form article. Questions should require a deep understanding of the text.
+`;
+            break;
+        case 'TOEIC':
+            examSpecificInstructions = `
+**Exam-Specific Rules for TOEIC:**
+- **Passage Format:** The passage must simulate a real-world business or daily-life document. Examples: an email, a business memo, a news report, an advertisement, or an official announcement.
+- **Passage Length:** Strictly 150-250 words.
+- **Content Focus:** The content should be practical and relevant to workplace or everyday scenarios.
+- **Question Focus:** Questions should test the practical understanding of the document, such as its main purpose, key details, and implied meaning.
+`;
+            break;
+        default:
+            examSpecificInstructions = `
+- **Passage Length:** Approximately 200-300 words.
+`;
+            break;
+    }
+
     const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
 
     // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
@@ -104,6 +139,8 @@ Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension 
 - Request ID: ${requestId}
 - Generation Date: ${dateVariation}
 
+${examSpecificInstructions}
+
 **Critically Important Passage Writing Rules:**
 1.  **NO CLICHÉ OPENINGS:** You are strictly forbidden from starting the passage with common, overused phrases such as "Imagine...", "In a world...", "Picture this...", or any similar cliché. The opening must be direct and engaging.
 2.  **DIVERSE OPENING STYLES:** Start the passage with one of the following techniques:
@@ -114,7 +151,7 @@ Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension 
     *   A question to the reader that will be answered in the passage.
 3.  **ORIGINALITY IS KEY:** This must be a COMPLETELY NEW and ORIGINAL passage. Do not reuse any content from previous generations. Focus specifically on the topic: "${selectedTopic}" and make it relevant to ${examType} exam standards.
 
-Please generate a reading passage of about 200-300 words related to ${selectedTopic}.
+Please generate the reading passage following the rules above.
 Each paragraph MUST start with two spaces for indentation.
 Paragraphs MUST be separated by a single blank line.
 
@@ -148,7 +185,7 @@ The JSON object must strictly follow this structure:
   ]
 }
 
-Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow the opening style rules strictly to ensure originality and quality.
+Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow all exam-specific rules and opening style rules strictly to ensure originality and quality.
 `;
     
     // 3. Call Gemini API - using the user-specified model
