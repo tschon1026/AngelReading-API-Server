@@ -99,31 +99,98 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **Vocabulary Level:** The passage should be written using vocabulary primarily from the CEFR A1 and A2 levels.
-- **Passage Length:** Strictly 300-450 words.
-- **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
+- **CEFR Level:** A2
+- **Passage Length:** Approximately 150-300 words.
+- **Paragraphs:** 1-2 paragraphs.
+- **Question Guidelines:** Focus on understanding the main idea, specific details, contextual inference, and sentence meaning.
+- **Skills Tested:** Basic reading comprehension and contextual interpretation.
 `;
             break;
         case '大學學測':
             examSpecificInstructions = `
 **Exam-Specific Rules for 大學學測:**
-- **Passage Length:** Strictly 300-450 words.
-- **Content Focus:** The passage should be relatively long and complex.
-- **Question Focus:** Design questions to test the student's ability to comprehend, analyze, and synthesize information from a long-form article. Questions should require a deep understanding of the text.
+- **CEFR Level:** B1-B2
+- **Passage Length:** Approximately 250-500 words.
+- **Paragraphs:** 2-4 paragraphs.
+- **Question Guidelines:** Test main idea, details, inference, word meaning in context, and understanding of passage structure.
+- **Skills Tested:** Intermediate to advanced reading ability, discourse comprehension, and logical reasoning.
 `;
             break;
         case 'TOEIC':
             examSpecificInstructions = `
 **Exam-Specific Rules for TOEIC:**
-- **Passage Format:** The passage must simulate a real-world business or daily-life document. Examples: an email, a business memo, a news report, an advertisement, or an official announcement.
-- **Passage Length:** Strictly 150-250 words.
-- **Content Focus:** The content should be practical and relevant to workplace or everyday scenarios.
-- **Question Focus:** Questions should test the practical understanding of the document, such as its main purpose, key details, and implied meaning.
+- **CEFR Level:** A1-B2
+- **Passage Length:** Approximately 100-300 words.
+- **Paragraphs:** 1-3 paragraphs.
+- **Question Guidelines:** Focus on detail comprehension, information synthesis, and integrating text with potential graphics (though you will only generate text).
+- **Skills Tested:** Workplace English application and information retrieval skills.
+- **Content Style:** The passage MUST simulate a real-world business or daily-life document like an email, memo, announcement, or advertisement.
+`;
+            break;
+        case 'TOEFL':
+            examSpecificInstructions = `
+**Exam-Specific Rules for TOEFL:**
+- **CEFR Level:** B2-C1
+- **Passage Length:** Approximately 600-700 words.
+- **Paragraphs:** 5-7 paragraphs.
+- **Question Guidelines:** Include questions on main idea, details, inference, sentence insertion, and information synthesis.
+- **Skills Tested:** Academic article comprehension, summarizing, and synthesizing information.
+`;
+            break;
+        case 'IELTS':
+            examSpecificInstructions = `
+**Exam-Specific Rules for IELTS:**
+- **CEFR Level:** B1-C2
+- **Passage Length:** Approximately 700-900 words (to simulate one of the three long passages).
+- **Paragraphs:** 5-8 paragraphs.
+- **Question Guidelines:** Create a mix of question types like paragraph matching, fill-in-the-blanks, multiple choice, and True/False/Not Given.
+- **Skills Tested:** Ability to handle diverse question formats and critical reading.
+`;
+            break;
+        case 'GEPT':
+            examSpecificInstructions = `
+**Exam-Specific Rules for GEPT:**
+- **CEFR Level:** A2-C1 (adapt difficulty based on the provided level, default to B1 if unspecified).
+- **Passage Length:** Approximately 200-600 words.
+- **Paragraphs:** 1-5 paragraphs.
+- **Question Guidelines:** Test word meaning, main idea, details, and inference.
+- **Skills Tested:** Practical and functional English reading ability.
+`;
+            break;
+        case 'SAT':
+            examSpecificInstructions = `
+**Exam-Specific Rules for SAT:**
+- **CEFR Level:** B2-C1
+- **Passage Length:** Approximately 500-750 words.
+- **Paragraphs:** 4-6 paragraphs.
+- **Question Guidelines:** Emphasize evidence-based answers, word in context, analysis of arguments, and interpretation of (hypothetical) charts/data.
+- **Skills Tested:** Academic and critical reading, and argument analysis.
+`;
+            break;
+        case 'GRE':
+            examSpecificInstructions = `
+**Exam-Specific Rules for GRE:**
+- **CEFR Level:** C1-C2
+- **Passage Length:** Approximately 200-500 words.
+- **Paragraphs:** 2-5 paragraphs.
+- **Question Guidelines:** Focus on high-level inference, sentence meaning, logical structure, and analysis of the author's claims.
+- **Skills Tested:** Advanced logical reasoning and comprehension of abstract concepts.
+`;
+            break;
+        case 'GMAT':
+            examSpecificInstructions = `
+**Exam-Specific Rules for GMAT:**
+- **CEFR Level:** C1-C2
+- **Passage Length:** Approximately 250-400 words.
+- **Paragraphs:** 2-4 paragraphs.
+- **Question Guidelines:** Test understanding of main idea, inference, evaluation of arguments, and identification of logical fallacies.
+- **Skills Tested:** Business and academic reading comprehension, and logical judgment.
 `;
             break;
         default:
             examSpecificInstructions = `
 - **Passage Length:** Approximately 200-300 words.
+- **Question Guidelines:** General reading comprehension questions.
 `;
             break;
     }
