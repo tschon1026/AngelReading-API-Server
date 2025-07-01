@@ -103,9 +103,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
 `;
             break;
-        case '高中學測':
+        case '大學學測':
             examSpecificInstructions = `
-**Exam-Specific Rules for 高中學測:**
+**Exam-Specific Rules for 大學學測:**
 - **Passage Length:** Strictly 300-450 words.
 - **Content Focus:** The passage should be relatively long and complex.
 - **Question Focus:** Design questions to test the student's ability to comprehend, analyze, and synthesize information from a long-form article. Questions should require a deep understanding of the text.
