@@ -159,7 +159,7 @@ Paragraphs MUST be separated by a single blank line.
 After the passage, create exactly 5 multiple-choice questions related to the passage.
 Each question must have 4 options.
 
-For each question, you MUST provide a detailed Chinese analysis for EVERY option, explaining why it is correct or incorrect.
+For each question, you MUST provide a detailed analysis in **繁體中文 (Traditional Chinese)** for EVERY option, explaining why it is correct or incorrect.
 
 The entire response MUST be a single, minified, valid JSON object.
 Do not include any markdown fences like \`\`\`json or any other explanatory text.
@@ -173,10 +173,10 @@ The JSON object must strictly follow this structure:
       "options": ["A", "B", "C", "D"], 
       "correctAnswer": "A",
       "optionAnalyses": {
-        "A": "對選項A的中文詳細分析，說明為何正確。",
-        "B": "對選項B的中文詳細分析，說明為何錯誤。",
-        "C": "對選項C的中文詳細分析，說明為何錯誤。",
-        "D": "對選項D的中文詳細分析，說明為何錯誤。"
+        "A": "對選項A的繁體中文詳細分析，說明為何正確。",
+        "B": "對選項B的繁體中文詳細分析，說明為何錯誤。",
+        "C": "對選項C的繁體中文詳細分析，說明為何錯誤。",
+        "D": "對選項D的繁體中文詳細分析，說明為何錯誤。"
       }
     },
     { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
