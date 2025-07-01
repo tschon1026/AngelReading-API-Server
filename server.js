@@ -69,7 +69,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
     const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
     
     // 1. Get request body
-    const { examType = 'TOEIC', difficulty = 'medium' } = req.body;
+    const { examType = 'TOEIC', difficulty = 'medium', timestamp, randomSeed, requestId } = req.body;
 
     if (!examType || !difficulty) {
         return res.status(400).json({ 
@@ -78,14 +78,36 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         });
     }
 
+    console.log(`[EXAM GENERATION] New request - ID: ${requestId}, Seed: ${randomSeed}, Timestamp: ${timestamp}`);
+
+    // 2. 生成主題變化的種子，確保每次都有不同的文章主題
+    const topicVariations = [
+        "technology and innovation", "environmental conservation", "cultural traditions", 
+        "scientific discoveries", "historical events", "social media impact", 
+        "education systems", "healthcare advancements", "business trends", 
+        "travel and tourism", "food and nutrition", "art and creativity",
+        "sports and fitness", "urban development", "climate change",
+        "artificial intelligence", "space exploration", "renewable energy",
+        "psychology and behavior", "economic development"
+    ];
+    
+    const selectedTopic = topicVariations[randomSeed % topicVariations.length];
+    const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
+
     // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
     const prompt = `
 You are an expert English test creator for various exams like ${examType}.
-Your task is to generate a complete reading comprehension test based on these parameters:
+Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension test based on these parameters:
 - Exam Type: ${examType}
 - Difficulty Level: ${difficulty}
+- Topic Focus: ${selectedTopic}
+- Request ID: ${requestId}
+- Generation Date: ${dateVariation}
 
-Please generate a reading passage of about 200-300 words.
+IMPORTANT: This must be a COMPLETELY NEW and ORIGINAL passage. Do not reuse any content from previous generations.
+Focus specifically on the topic: "${selectedTopic}" and make it relevant to ${examType} exam standards.
+
+Please generate a reading passage of about 200-300 words related to ${selectedTopic}.
 Each paragraph MUST start with two spaces for indentation.
 Paragraphs MUST be separated by a single blank line.
 
@@ -112,12 +134,14 @@ The JSON object must strictly follow this structure:
         "D": "對選項D的中文詳細分析，說明為何錯誤。"
       }
     },
-    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B" },
-    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C" },
-    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D" },
-    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A" }
+    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} }
   ]
 }
+
+Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively to ensure originality.
 `;
     
     // 3. Call Gemini API - using the user-specified model
@@ -132,6 +156,7 @@ The JSON object must strictly follow this structure:
 
     try {
         const jsonResponse = JSON.parse(text);
+        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
         // Send the parsed JSON directly to the iOS app
         res.json(jsonResponse); 
     } catch (parseError) {
