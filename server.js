@@ -228,8 +228,6 @@ Each question must have 4 options.
 
 For each question, you MUST provide a detailed analysis in **繁體中文 (Traditional Chinese)** for EVERY option, explaining why it is correct or incorrect.
 
-**Also, for each question, you MUST include an 'evidenceText' field. The value of this field must be the EXACT sentence or phrase from the passage that contains the answer to the question.**
-
 The entire response MUST be a single, minified, valid JSON object.
 Do not include any markdown fences like \`\`\`json or any other explanatory text.
 The JSON object must strictly follow this structure:
@@ -241,7 +239,6 @@ The JSON object must strictly follow this structure:
       "questionText": "Question 1...", 
       "options": ["A", "B", "C", "D"], 
       "correctAnswer": "A",
-      "evidenceText": "The exact sentence from the passage that proves A is the correct answer.",
       "optionAnalyses": {
         "A": "對選項A的繁體中文詳細分析，說明為何正確。",
         "B": "對選項B的繁體中文詳細分析，說明為何錯誤。",
@@ -249,10 +246,10 @@ The JSON object must strictly follow this structure:
         "D": "對選項D的繁體中文詳細分析，說明為何錯誤。"
       }
     },
-    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "evidenceText": "The relevant phrase from the passage.", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "evidenceText": "The relevant phrase from the passage.", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "evidenceText": "The relevant phrase from the passage.", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "evidenceText": "The relevant phrase from the passage.", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} }
+    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
+    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} }
   ]
 }
 
