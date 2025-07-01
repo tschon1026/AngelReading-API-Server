@@ -96,7 +96,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 
     // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
     const prompt = `
-You are an expert English test creator for various exams like ${examType}.
+You are an expert English test creator for various exams like ${examType}. Your tone should be academic, objective, and suitable for a standardized test.
 Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension test based on these parameters:
 - Exam Type: ${examType}
 - Difficulty Level: ${difficulty}
@@ -104,8 +104,15 @@ Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension 
 - Request ID: ${requestId}
 - Generation Date: ${dateVariation}
 
-IMPORTANT: This must be a COMPLETELY NEW and ORIGINAL passage. Do not reuse any content from previous generations.
-Focus specifically on the topic: "${selectedTopic}" and make it relevant to ${examType} exam standards.
+**Critically Important Passage Writing Rules:**
+1.  **NO CLICHÉ OPENINGS:** You are strictly forbidden from starting the passage with common, overused phrases such as "Imagine...", "In a world...", "Picture this...", or any similar cliché. The opening must be direct and engaging.
+2.  **DIVERSE OPENING STYLES:** Start the passage with one of the following techniques:
+    *   A surprising statistic or fact.
+    *   A direct, declarative statement that introduces the topic.
+    *   A relevant historical context.
+    *   An impactful quote (if relevant to the topic).
+    *   A question to the reader that will be answered in the passage.
+3.  **ORIGINALITY IS KEY:** This must be a COMPLETELY NEW and ORIGINAL passage. Do not reuse any content from previous generations. Focus specifically on the topic: "${selectedTopic}" and make it relevant to ${examType} exam standards.
 
 Please generate a reading passage of about 200-300 words related to ${selectedTopic}.
 Each paragraph MUST start with two spaces for indentation.
@@ -141,7 +148,7 @@ The JSON object must strictly follow this structure:
   ]
 }
 
-Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively to ensure originality.
+Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow the opening style rules strictly to ensure originality and quality.
 `;
     
     // 3. Call Gemini API - using the user-specified model
