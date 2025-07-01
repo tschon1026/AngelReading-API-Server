@@ -6,9 +6,20 @@ const app = express();
 // For Railway, it's best to use process.env.PORT, but we'll set 8080 as a fallback.
 const PORT = process.env.PORT || 8080;
 
+// --- START DEBUG LOGGING ---
+console.log(`[DEBUG] SERVER_API_KEY on startup: ${process.env.SERVER_API_KEY}`);
+console.log(`[DEBUG] GEMINI_API_KEY on startup: ${process.env.GEMINI_API_KEY ? 'Loaded' : 'NOT LOADED'}`);
+
 // 中間件
 app.use(cors());
 app.use(express.json());
+
+// Logger Middleware to see all incoming requests
+app.use((req, res, next) => {
+  console.log(`[INCOMING REQUEST] Method: ${req.method}, URL: ${req.originalUrl}`);
+  next();
+});
+// --- END DEBUG LOGGING ---
 
 // 中間件 1: 驗證 App 是否有權限跟後端伺服器溝通
 const authenticateServerKey = (req, res, next) => {
