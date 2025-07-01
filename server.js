@@ -99,14 +99,15 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **Passage Length:** Strictly 250-350 words.
+- **Vocabulary Level:** The passage should primarily use a vocabulary base of the most common 2000 English words.
+- **Passage Length:** Strictly 300-450 words.
 - **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
 `;
             break;
         case '大學學測':
             examSpecificInstructions = `
 **Exam-Specific Rules for 大學學測:**
-- **Passage Length:** Strictly 300-400 words.
+- **Passage Length:** Strictly 300-450 words.
 - **Content Focus:** The passage should be relatively long and complex.
 - **Question Focus:** Design questions to test the student's ability to comprehend, analyze, and synthesize information from a long-form article. Questions should require a deep understanding of the text.
 `;
