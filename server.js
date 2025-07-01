@@ -3,7 +3,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// For Railway, it's best to use process.env.PORT, but we'll set 8080 as a fallback.
+const PORT = process.env.PORT || 8080;
 
 // 中間件
 app.use(cors());
@@ -22,10 +23,9 @@ const authenticateServerKey = (req, res, next) => {
   }
 };
 
-// 中間件 2: 驗證從 App 端傳來的 Gemini 金鑰是否有效 (雖然有點多餘，但作為安全檢查)
+// 中間件 2: 驗證從 App 端傳來的 Gemini 金鑰是否有效
 const authenticateGeminiKey = (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
-    // 這裡我們只是檢查金鑰是否存在，因為金鑰是動態從前端傳來的
     if (apiKey) {
       next();
     } else {
@@ -38,7 +38,7 @@ const authenticateGeminiKey = (req, res, next) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
-    message: 'AngelReading API Server is running.',
+    message: 'AngelReading API Server is running on Railway.',
     timestamp: new Date().toISOString()
   });
 });
