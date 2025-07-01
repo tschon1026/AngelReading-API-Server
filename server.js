@@ -99,7 +99,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **Vocabulary Level:** The passage should primarily use a vocabulary base of the most common 2000 English words.
+- **Vocabulary Level:** The passage should be written using vocabulary primarily from the CEFR A1 and A2 levels.
 - **Passage Length:** Strictly 300-450 words.
 - **Question Focus:** Design questions to test the student's vocabulary comprehension, as well as their ability to understand, analyze, and integrate information from the passage.
 `;
