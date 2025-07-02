@@ -231,15 +231,9 @@ For each question, you MUST provide a detailed analysis in **繁體中文 (Tradi
 2. Explain why the option is correct or incorrect based on the cited text
 3. Use the format: "根據第X段第Y行「原文引用」，..." 來開始每個選項的分析
 
-Additionally, for each option's analysis, you MUST provide citation information in the following format:
-- Include a "citationRanges" object for each option that maps to an array of citation objects
-- Each citation object must contain:
-  * paragraphIndex (0-based)
-  * lineIndex (0-based within the paragraph)
-  * text (the exact quoted text)
-  * questionId (the question number)
-
-The entire response MUST be a single, minified, valid JSON object with this structure:
+The entire response MUST be a single, minified, valid JSON object.
+Do not include any markdown fences like \`\`\`json or any other explanatory text.
+The JSON object must strictly follow this structure:
 {
   "passage": "The full reading passage text here.",
   "questions": [
@@ -249,22 +243,16 @@ The entire response MUST be a single, minified, valid JSON object with this stru
       "options": ["A", "B", "C", "D"], 
       "correctAnswer": "A",
       "optionAnalyses": {
-        "A": "根據第1段第2行「原文引用」，...",
-        "B": "根據第2段第1行「原文引用」，...",
-        "C": "根據第1段第3行「原文引用」，...",
-        "D": "根據第3段第1行「原文引用」，..."
-      },
-      "citationRanges": {
-        "A": [{"paragraphIndex": 0, "lineIndex": 1, "text": "原文引用", "questionId": 1}],
-        "B": [{"paragraphIndex": 1, "lineIndex": 0, "text": "原文引用", "questionId": 1}],
-        "C": [{"paragraphIndex": 0, "lineIndex": 2, "text": "原文引用", "questionId": 1}],
-        "D": [{"paragraphIndex": 2, "lineIndex": 0, "text": "原文引用", "questionId": 1}]
+        "A": "根據第X段第Y行「原文引用」，...",
+        "B": "根據第X段第Y行「原文引用」，...",
+        "C": "根據第X段第Y行「原文引用」，...",
+        "D": "根據第X段第Y行「原文引用」，..."
       }
     },
-    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."}, "citationRanges": {"A": [], "B": [], "C": [], "D": []} },
-    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."}, "citationRanges": {"A": [], "B": [], "C": [], "D": []} },
-    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."}, "citationRanges": {"A": [], "B": [], "C": [], "D": []} },
-    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."}, "citationRanges": {"A": [], "B": [], "C": [], "D": []} }
+    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} }
   ]
 }
 
