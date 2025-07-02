@@ -99,7 +99,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **CEFR Level:** A2
+- **CEFR Level:** A1-A2
 - **Passage Length:** Approximately 150-300 words.
 - **Paragraphs:** 1-2 paragraphs.
 - **Question Guidelines:** Focus on understanding the main idea, specific details, contextual inference, and sentence meaning.
