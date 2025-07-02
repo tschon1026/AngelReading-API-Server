@@ -99,7 +99,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
         case '國中會考':
             examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
-- **CEFR Level:** A1
+- **CEFR Level:** A2
 - **Passage Length:** Approximately 150-300 words.
 - **Paragraphs:** 1-2 paragraphs.
 - **Question Guidelines:** Focus on understanding the main idea, specific details, contextual inference, and sentence meaning.
@@ -226,7 +226,10 @@ Paragraphs MUST be separated by a single blank line.
 After the passage, create exactly 5 multiple-choice questions related to the passage.
 Each question must have 4 options.
 
-For each question, you MUST provide a detailed analysis in **繁體中文 (Traditional Chinese)** for EVERY option, explaining why it is correct or incorrect.
+For each question, you MUST provide a detailed analysis in **繁體中文 (Traditional Chinese)** for EVERY option. Each analysis MUST:
+1. Specifically cite which paragraph(s) and line(s) in the passage support or contradict the option
+2. Explain why the option is correct or incorrect based on the cited text
+3. Use the format: "根據第X段第Y行「原文引用」，..." 來開始每個選項的分析
 
 The entire response MUST be a single, minified, valid JSON object.
 Do not include any markdown fences like \`\`\`json or any other explanatory text.
@@ -240,16 +243,16 @@ The JSON object must strictly follow this structure:
       "options": ["A", "B", "C", "D"], 
       "correctAnswer": "A",
       "optionAnalyses": {
-        "A": "對選項A的繁體中文詳細分析，說明為何正確。",
-        "B": "對選項B的繁體中文詳細分析，說明為何錯誤。",
-        "C": "對選項C的繁體中文詳細分析，說明為何錯誤。",
-        "D": "對選項D的繁體中文詳細分析，說明為何錯誤。"
+        "A": "根據第X段第Y行「原文引用」，...",
+        "B": "根據第X段第Y行「原文引用」，...",
+        "C": "根據第X段第Y行「原文引用」，...",
+        "D": "根據第X段第Y行「原文引用」，..."
       }
     },
-    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} },
-    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "分析...", "B": "分析...", "C": "分析...", "D": "分析..."} }
+    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
+    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} }
   ]
 }
 
