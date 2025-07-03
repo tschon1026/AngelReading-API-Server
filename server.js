@@ -68,8 +68,8 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
     const geminiApiKeyFromRequest = req.headers['x-api-key'];
     const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
     
-    // 1. Get request body
-    const { examType = 'TOEIC', difficulty = 'medium', timestamp, randomSeed, requestId } = req.body;
+    // 1. Get request body - 新增 customPrompt 來接收客戶端傳來的 prompt
+    const { examType = 'TOEIC', difficulty = 'medium', timestamp, randomSeed, requestId, prompt: customPrompt } = req.body;
 
     if (!examType || !difficulty) {
         return res.status(400).json({ 
@@ -80,24 +80,33 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 
     console.log(`[EXAM GENERATION] New request - ID: ${requestId}, Seed: ${randomSeed}, Timestamp: ${timestamp}`);
 
-    // 2. 生成主題變化的種子，確保每次都有不同的文章主題
-    const topicVariations = [
-        "technology and innovation", "environmental conservation", "cultural traditions", 
-        "scientific discoveries", "historical events", "social media impact", 
-        "education systems", "healthcare advancements", "business trends", 
-        "travel and tourism", "food and nutrition", "art and creativity",
-        "sports and fitness", "urban development", "climate change",
-        "artificial intelligence", "space exploration", "renewable energy",
-        "psychology and behavior", "economic development"
-    ];
-    
-    const selectedTopic = topicVariations[randomSeed % topicVariations.length];
+    // 用於儲存最終要發送給 AI 的 prompt
+    let finalPrompt;
 
-    // 2. 動態生成特定考試類型的說明
-    let examSpecificInstructions = '';
-    switch (examType) {
-        case '國中會考':
-            examSpecificInstructions = `
+    // 2. 檢查是否有從客戶端傳來的 customPrompt
+    if (customPrompt && customPrompt.trim() !== '') {
+        console.log('[PROMPT] Using custom prompt provided by the client.');
+        finalPrompt = customPrompt;
+    } else {
+        // 如果沒有 customPrompt，則使用原有的邏輯來生成 prompt
+        console.log('[PROMPT] No custom prompt provided, generating prompt based on examType.');
+        
+        const topicVariations = [
+            "technology and innovation", "environmental conservation", "cultural traditions", 
+            "scientific discoveries", "historical events", "social media impact", 
+            "education systems", "healthcare advancements", "business trends", 
+            "travel and tourism", "food and nutrition", "art and creativity",
+            "sports and fitness", "urban development", "climate change",
+            "artificial intelligence", "space exploration", "renewable energy",
+            "psychology and behavior", "economic development"
+        ];
+        
+        const selectedTopic = topicVariations[randomSeed % topicVariations.length];
+        
+        let examSpecificInstructions = '';
+        switch (examType) {
+            case '國中會考':
+                examSpecificInstructions = `
 **Exam-Specific Rules for 國中會考:**
 - **CEFR Level:** A1
 - **Passage Length:** Approximately 150-300 words.
@@ -105,9 +114,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Focus on understanding the main idea, specific details, contextual inference, and sentence meaning.
 - **Skills Tested:** Basic reading comprehension and contextual interpretation.
 `;
-            break;
-        case '大學學測':
-            examSpecificInstructions = `
+                break;
+            case '大學學測':
+                examSpecificInstructions = `
 **Exam-Specific Rules for 大學學測:**
 - **CEFR Level:** B1-B2
 - **Passage Length:** Approximately 250-500 words.
@@ -115,9 +124,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Test main idea, details, inference, word meaning in context, and understanding of passage structure.
 - **Skills Tested:** Intermediate to advanced reading ability, discourse comprehension, and logical reasoning.
 `;
-            break;
-        case 'TOEIC':
-            examSpecificInstructions = `
+                break;
+            case 'TOEIC':
+                examSpecificInstructions = `
 **Exam-Specific Rules for TOEIC:**
 - **CEFR Level:** A1-B2
 - **Passage Length:** Approximately 100-300 words.
@@ -126,9 +135,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Skills Tested:** Workplace English application and information retrieval skills.
 - **Content Style:** The passage MUST simulate a real-world business or daily-life document like an email, memo, announcement, or advertisement.
 `;
-            break;
-        case 'TOEFL':
-            examSpecificInstructions = `
+                break;
+            case 'TOEFL':
+                examSpecificInstructions = `
 **Exam-Specific Rules for TOEFL:**
 - **CEFR Level:** B2-C1
 - **Passage Length:** Approximately 600-700 words.
@@ -136,9 +145,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Include questions on main idea, details, inference, sentence insertion, and information synthesis.
 - **Skills Tested:** Academic article comprehension, summarizing, and synthesizing information.
 `;
-            break;
-        case 'IELTS':
-            examSpecificInstructions = `
+                break;
+            case 'IELTS':
+                examSpecificInstructions = `
 **Exam-Specific Rules for IELTS:**
 - **CEFR Level:** B1-C2
 - **Passage Length:** Approximately 700-900 words (to simulate one of the three long passages).
@@ -146,9 +155,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Create a mix of question types like paragraph matching, fill-in-the-blanks, multiple choice, and True/False/Not Given.
 - **Skills Tested:** Ability to handle diverse question formats and critical reading.
 `;
-            break;
-        case 'GEPT':
-            examSpecificInstructions = `
+                break;
+            case 'GEPT':
+                examSpecificInstructions = `
 **Exam-Specific Rules for GEPT:**
 - **CEFR Level:** A2-C1 (adapt difficulty based on the provided level, default to B1 if unspecified).
 - **Passage Length:** Approximately 200-600 words.
@@ -156,9 +165,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Test word meaning, main idea, details, and inference.
 - **Skills Tested:** Practical and functional English reading ability.
 `;
-            break;
-        case 'SAT':
-            examSpecificInstructions = `
+                break;
+            case 'SAT':
+                examSpecificInstructions = `
 **Exam-Specific Rules for SAT:**
 - **CEFR Level:** B2-C1
 - **Passage Length:** Approximately 500-750 words.
@@ -166,9 +175,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Emphasize evidence-based answers, word in context, analysis of arguments, and interpretation of (hypothetical) charts/data.
 - **Skills Tested:** Academic and critical reading, and argument analysis.
 `;
-            break;
-        case 'GRE':
-            examSpecificInstructions = `
+                break;
+            case 'GRE':
+                examSpecificInstructions = `
 **Exam-Specific Rules for GRE:**
 - **CEFR Level:** C1-C2
 - **Passage Length:** Approximately 200-500 words.
@@ -176,9 +185,9 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Focus on high-level inference, sentence meaning, logical structure, and analysis of the author's claims.
 - **Skills Tested:** Advanced logical reasoning and comprehension of abstract concepts.
 `;
-            break;
-        case 'GMAT':
-            examSpecificInstructions = `
+                break;
+            case 'GMAT':
+                examSpecificInstructions = `
 **Exam-Specific Rules for GMAT:**
 - **CEFR Level:** C1-C2
 - **Passage Length:** Approximately 250-400 words.
@@ -186,19 +195,18 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 - **Question Guidelines:** Test understanding of main idea, inference, evaluation of arguments, and identification of logical fallacies.
 - **Skills Tested:** Business and academic reading comprehension, and logical judgment.
 `;
-            break;
-        default:
-            examSpecificInstructions = `
+                break;
+            default:
+                examSpecificInstructions = `
 - **Passage Length:** Approximately 200-300 words.
 - **Question Guidelines:** General reading comprehension questions.
 `;
-            break;
-    }
+                break;
+        }
 
-    const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
-
-    // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
-    const prompt = `
+        const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
+        
+        finalPrompt = `
 You are an expert English test creator for various exams like ${examType}. Your tone should be academic, objective, and suitable for a standardized test.
 Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension test based on these parameters:
 - Exam Type: ${examType}
@@ -255,13 +263,12 @@ The JSON object must strictly follow this structure:
     { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} }
   ]
 }
-
-Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow all exam-specific rules and opening style rules strictly to ensure originality and quality.
 `;
-    
-    // 3. Call Gemini API - using the user-specified model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' }); 
-    const result = await model.generateContent(prompt);
+    }
+
+    // 3. Call Gemini API - using the finalPrompt
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); // 建議使用最新的 flash 模型
+    const result = await model.generateContent(finalPrompt);
     const response = await result.response;
     let text = response.text();
 
@@ -271,7 +278,7 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
 
     try {
         const jsonResponse = JSON.parse(text);
-        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
+        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${customPrompt ? 'Custom Prompt' : selectedTopic}`);
         // Send the parsed JSON directly to the iOS app
         res.json(jsonResponse); 
     } catch (parseError) {
@@ -314,5 +321,5 @@ app.use('*', (req, res) => {
 
 // 啟動伺服器
 app.listen(PORT, () => {
-  console.log(`伺服器正在監聽 port ${PORT}`);
+  console.log(`AngelReading API Server is running on port ${PORT}`);
 }); 
