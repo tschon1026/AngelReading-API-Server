@@ -82,11 +82,13 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
 
     // 用於儲存最終要發送給 AI 的 prompt
     let finalPrompt;
+    let selectedTopic;
 
     // 2. 檢查是否有從客戶端傳來的 customPrompt
     if (customPrompt && customPrompt.trim() !== '') {
         console.log('[PROMPT] Using custom prompt provided by the client.');
         finalPrompt = customPrompt;
+        selectedTopic = 'Custom Prompt';
     } else {
         // 如果沒有 customPrompt，則使用原有的邏輯來生成 prompt
         console.log('[PROMPT] No custom prompt provided, generating prompt based on examType.');
@@ -101,7 +103,7 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
             "psychology and behavior", "economic development"
         ];
         
-        const selectedTopic = topicVariations[randomSeed % topicVariations.length];
+        selectedTopic = topicVariations[randomSeed % topicVariations.length];
         
         let examSpecificInstructions = '';
         switch (examType) {
@@ -278,7 +280,7 @@ The JSON object must strictly follow this structure:
 
     try {
         const jsonResponse = JSON.parse(text);
-        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${customPrompt ? 'Custom Prompt' : selectedTopic}`);
+        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
         // Send the parsed JSON directly to the iOS app
         res.json(jsonResponse); 
     } catch (parseError) {
