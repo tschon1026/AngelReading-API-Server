@@ -112,7 +112,7 @@ Please design an English reading test for Taiwan Junior High School Comprehensiv
 2. **Questions:**
    - Create 5 questions to test comprehension, vocabulary, and grammar, following Taiwan's 会考 format:
      - 2 multiple-choice questions (4 options each) for main idea or detail recall.
-     - 1 true/false question for comprehension.
+     - 1 multiple-choice question (4 options) asking "Which of the following statements is true/false according to the passage?" (Do NOT use direct true/false questions. Each option should be a statement; only one is correct.)
      - 1 vocabulary question (guess meaning from context or choose the correct word).
      - 1 grammar question.
    - Ensure questions progress from easy (direct recall) to slightly challenging (simple inference or vocabulary guessing).
