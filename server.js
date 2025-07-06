@@ -500,13 +500,13 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
     try {
       const ai = JSON.parse(text);
-      const result = {
+      const weaknessAnalysis = {
         id: uuidv4(),
         weaknesses: ai.logicGaps || [],
-        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('；') : (ai.improvementSuggestions || ''),
-        generatedAt: new Date().toISOString()
+        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('\n') : (ai.improvementSuggestions || ''),
+        generatedAt: Date.now() / 1000 // 以秒為單位的 timestamp
       };
-      res.json(result);
+      res.json(weaknessAnalysis);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
       res.status(500).json({ error: 'Failed to parse response from AI', rawResponse: text });
