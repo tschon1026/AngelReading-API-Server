@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 // For Railway, it's best to use process.env.PORT, but we'll set 8080 as a fallback.
@@ -476,11 +477,7 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const geminiApiKeyFromRequest = req.headers['x-api-key'];
     const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
-
-    // 1. 取得 ExamResult 物件
     const examResult = req.body;
-
-    // 2. 建立 prompt，請 Gemini 幫你分析弱點
     const prompt = `
 你是一位專業英文閱讀測驗分析師。請根據以下考生的作答結果，分析其閱讀弱點、邏輯盲點、常見錯誤類型，並給出具體改進建議。請用繁體中文回答。
 
@@ -496,18 +493,20 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
   "category": "常見弱點分類"
 }
 `;
-
-    // 3. 呼叫 Gemini 產生分析
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     const result = await model.generateContent(prompt + '\n' + JSON.stringify(examResult));
     const response = await result.response;
     let text = response.text();
-
-    // 4. 清理與回傳
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
     try {
-      const jsonResponse = JSON.parse(text);
-      res.json(jsonResponse);
+      const ai = JSON.parse(text);
+      const result = {
+        id: uuidv4(),
+        weaknesses: ai.logicGaps || [],
+        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('；') : (ai.improvementSuggestions || ''),
+        generatedAt: new Date().toISOString()
+      };
+      res.json(result);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
       res.status(500).json({ error: 'Failed to parse response from AI', rawResponse: text });
