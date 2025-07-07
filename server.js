@@ -485,32 +485,12 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
 - 題目內容（可省略或簡述）
 - 答案陣列（每題是否正確、選項、題型等）
 
-請分析考生的弱點，並為每個弱點「只挑選1~2個最關聯」的主題標籤（tag），避免過多標籤造成資訊雜亂。
-同樣，請為每個建議「只挑選1~2個最關聯」的主題標籤。
-標籤應該簡短有力，能夠準確描述弱點的類型或領域，例如「詞彙量不足」、「文法理解」、「閱讀策略」、「主旨理解」、「細節推論」等。
-
 請輸出一個 JSON 物件，格式如下：
 {
-  "weaknesses": [
-    {
-      "text": "弱點描述1",
-      "tags": ["標籤1", "標籤2"]
-    },
-    {
-      "text": "弱點描述2",
-      "tags": ["標籤3"]
-    }
-  ],
-  "suggestions": [
-    {
-      "text": "建議描述1",
-      "tags": ["標籤4", "標籤5"]
-    },
-    {
-      "text": "建議描述2",
-      "tags": ["標籤6"]
-    }
-  ]
+  "summary": "總結考生的主要弱點",
+  "logicGaps": ["邏輯盲點1", "邏輯盲點2"],
+  "improvementSuggestions": ["建議1", "建議2"],
+  "category": "常見弱點分類"
 }
 `;
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
@@ -520,80 +500,12 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
     try {
       const ai = JSON.parse(text);
-      
-      // 處理弱點與標籤
-      const weaknessTexts = [];
-      const tags = [];
-      
-      // 處理弱點及其標籤
-      if (Array.isArray(ai.weaknesses)) {
-        ai.weaknesses.forEach(weakness => {
-          if (typeof weakness === 'object' && weakness.text) {
-            weaknessTexts.push(weakness.text);
-            
-            // 處理弱點標籤
-            if (Array.isArray(weakness.tags)) {
-              weakness.tags.forEach(tagName => {
-                tags.push({
-                  id: uuidv4(),
-                  name: tagName,
-                  type: "weakness",
-                  color: "" // 使用客戶端生成的顏色
-                });
-              });
-            }
-          } else if (typeof weakness === 'string') {
-            // 處理舊格式
-            weaknessTexts.push(weakness);
-          }
-        });
-      } else if (ai.logicGaps && Array.isArray(ai.logicGaps)) {
-        // 相容舊格式
-        weaknessTexts.push(...ai.logicGaps);
-      }
-      
-      // 處理建議及其標籤
-      let suggestionsText = "";
-      if (Array.isArray(ai.suggestions)) {
-        const suggestionTexts = [];
-        ai.suggestions.forEach(suggestion => {
-          if (typeof suggestion === 'object' && suggestion.text) {
-            suggestionTexts.push(suggestion.text);
-            
-            // 處理建議標籤
-            if (Array.isArray(suggestion.tags)) {
-              suggestion.tags.forEach(tagName => {
-                tags.push({
-                  id: uuidv4(),
-                  name: tagName,
-                  type: "suggestion",
-                  color: "" // 使用客戶端生成的顏色
-                });
-              });
-            }
-          } else if (typeof suggestion === 'string') {
-            // 處理舊格式
-            suggestionTexts.push(suggestion);
-          }
-        });
-        suggestionsText = suggestionTexts.join('\n');
-      } else if (ai.improvementSuggestions) {
-        // 相容舊格式
-        if (Array.isArray(ai.improvementSuggestions)) {
-          suggestionsText = ai.improvementSuggestions.join('\n');
-        } else if (typeof ai.improvementSuggestions === 'string') {
-          suggestionsText = ai.improvementSuggestions;
-        }
-      }
-      
       const weaknessAnalysis = {
         id: uuidv4(),
-        weaknesses: weaknessTexts,
-        suggestions: suggestionsText,
-        generatedAt: Date.now() / 1000, // 以秒為單位的 timestamp
-        tags: tags
+        weaknesses: ai.logicGaps || [],
+        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('\n') : (ai.improvementSuggestions || ''),
+        generatedAt: Date.now() / 1000 // 以秒為單位的 timestamp
       };
-      
       res.json(weaknessAnalysis);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
