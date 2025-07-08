@@ -520,49 +520,6 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
   }
 });
 
-// 弱點趨勢分析 AI 端點
-app.post('/api/weakness-trend', authenticateGeminiKey, async (req, res) => {
-  try {
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const geminiApiKeyFromRequest = req.headers['x-api-key'];
-    const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
-    const analyses = req.body; // 應為 WeaknessAnalysis 陣列
-    const prompt = `
-你是一位專業英文閱讀弱點趨勢分析師。請根據下列多次測驗的弱點分析結果，產生一份趨勢報告，內容需包含：
-1. summary：總結整體弱點變化
-2. improved：已改善的弱點
-3. regressed：退步或新出現的弱點
-4. newWeaknesses：最近一次才出現的新弱點
-5. focusAreas：建議重點加強的部分
-請用繁體中文回答，並以結構化 JSON 格式回傳：
-{
-  "summary": "...",
-  "improved": ["..."],
-  "regressed": ["..."],
-  "newWeaknesses": ["..."],
-  "focusAreas": ["..."]
-}
-以下是多次弱點分析資料：
-${JSON.stringify(analyses)}
-`;
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text();
-    text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
-    try {
-      const trend = JSON.parse(text);
-      res.json(trend);
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      res.status(500).json({ error: 'Failed to parse trend response from AI', rawResponse: text });
-    }
-  } catch (error) {
-    console.error('Gemini API Error:', error);
-    res.status(500).json({ error: 'Failed to generate weakness trend analysis', message: error.message });
-  }
-});
-
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
   console.error(err.stack);
