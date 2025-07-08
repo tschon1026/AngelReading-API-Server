@@ -501,8 +501,11 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
     const response = await result.response;
     let text = response.text();
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
+    // 只取第一個合法 JSON 物件
+    const firstJsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!firstJsonMatch) throw new Error('AI 回傳內容找不到合法 JSON');
     try {
-      const ai = JSON.parse(text);
+      const ai = JSON.parse(firstJsonMatch[0]);
       const weaknessAnalysis = {
         id: uuidv4(),
         weaknesses: ai.logicGaps || [],
