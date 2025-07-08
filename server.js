@@ -449,8 +449,8 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
 
     try {
         const jsonResponse = JSON.parse(text);
-        // 新增唯一 id 與 difficulty 欄位
-        jsonResponse.id = uuidv4();
+        // 將 id 改為 Int 型別，使用 Date.now() 產生唯一整數
+        jsonResponse.id = Date.now();
         jsonResponse.difficulty = difficulty;
         console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
         // Send the parsed JSON directly to the iOS app
