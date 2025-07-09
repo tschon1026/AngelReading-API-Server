@@ -482,27 +482,22 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
     const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
     const examResult = req.body;
     const prompt = `
-你是一位專業英文閱讀測驗分析師。請根據考生的作答結果，分析其閱讀弱點，並給出具體改進建議。請用繁體中文回答，並輸出以下 JSON 結構：
+你是一位專業英文閱讀測驗分析師。請根據以下考生的作答結果，分析其閱讀弱點、邏輯盲點、常見錯誤類型，並給出具體改進建議。請用繁體中文回答。
 
+【考生作答結果】
+- 題目內容（可省略或簡述）
+- 答案陣列（每題是否正確、選項、題型等）
+
+請輸出一個 JSON 物件，格式如下：
 {
-  "weaknesses": [
-    { "title": "文法", "level": "high", "icon": "exclamationmark.triangle.fill" },
-    { "title": "單字", "level": "medium", "icon": "exclamationmark.circle.fill" }
-  ],
-  "suggestions": [
-    { "title": "加強文法練習", "detail": "針對時態、被動語態多做題目。", "level": "high", "icon": "exclamationmark.triangle.fill", "isMain": true },
-    { "title": "每日背單字", "detail": "每天記憶 5 個新單字，並複習舊單字。", "level": "medium", "icon": "exclamationmark.circle.fill", "isMain": false }
-  ]
+  "summary": "總結考生的主要弱點",
+  "logicGaps": ["邏輯盲點1", "邏輯盲點2"],
+  "improvementSuggestions": ["建議1", "建議2"],
+  "category": "常見弱點分類"
 }
-
-- weaknesses：每個弱點需標註 title（名稱）、level（high/medium/low）、icon（SF Symbol 名稱）。
-- suggestions：每個建議需有 title（建議標題）、detail（詳細說明）、level、icon、isMain（是否主建議）。
-- 請根據考生錯誤類型自動分級與分配 icon，主建議 isMain 設 true，輔助建議設 false。
-- 只輸出一個合法 JSON 物件，不要有多餘說明。
-` + '\n' + JSON.stringify(examResult);
-
+`;
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(prompt + '\n' + JSON.stringify(examResult));
     const response = await result.response;
     let text = response.text();
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
@@ -513,9 +508,9 @@ app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
       const ai = JSON.parse(firstJsonMatch[0]);
       const weaknessAnalysis = {
         id: uuidv4(),
-        weaknesses: ai.weaknesses || [],
-        suggestions: ai.suggestions || [],
-        generatedAt: Date.now()
+        weaknesses: ai.logicGaps || [],
+        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('\n') : (ai.improvementSuggestions || ''),
+        generatedAt: Date.now() / 1000 // 以秒為單位的 timestamp
       };
       res.json(weaknessAnalysis);
     } catch (parseError) {
