@@ -524,7 +524,17 @@ function analyzeWeakness(examResults) {
   const avgScores = Object.fromEntries(
     Object.entries(allScores).map(([key, arr]) => [key, arr.reduce((a, b) => a + b, 0) / arr.length])
   );
-  const sorted = Object.entries(avgScores).sort((a, b) => a[1] - b[1]);
+  // 只挑出有失分的能力（分數 < 3）
+  const filtered = Object.entries(avgScores).filter(([key, score]) => score < 3);
+  if (filtered.length === 0) {
+    // 全部滿分，無弱點
+    return { weaknesses: [], abilityRadar: WEAKNESS_TEMPLATES.map(t => ({
+      key: t.key,
+      tag: t.tag,
+      score: Math.round((avgScores[t.key] ?? 0) * 100)
+    })) };
+  }
+  const sorted = filtered.sort((a, b) => a[1] - b[1]);
   const top3 = sorted.slice(0, 3).map(([key, score]) => {
     const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
     return template
