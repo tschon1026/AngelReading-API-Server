@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 // For Railway, it's best to use process.env.PORT, but we'll set 8080 as a fallback.
@@ -449,9 +448,6 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
 
     try {
         const jsonResponse = JSON.parse(text);
-        // 將 id 改為 Int 型別，使用 Date.now() 產生唯一整數
-        jsonResponse.id = Date.now();
-        jsonResponse.difficulty = difficulty;
         console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
         // Send the parsed JSON directly to the iOS app
         res.json(jsonResponse); 
@@ -474,54 +470,6 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
   }
 });
 
-// 弱點分析 AI 端點
-app.post('/api/weakness-analysis', authenticateGeminiKey, async (req, res) => {
-  try {
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const geminiApiKeyFromRequest = req.headers['x-api-key'];
-    const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
-    const examResult = req.body;
-    const prompt = `
-你是一位專業英文閱讀測驗分析師。請根據以下考生的作答結果，分析其閱讀弱點、邏輯盲點、常見錯誤類型，並給出具體改進建議。請用繁體中文回答。
-
-【考生作答結果】
-- 題目內容（可省略或簡述）
-- 答案陣列（每題是否正確、選項、題型等）
-
-請輸出一個 JSON 物件，格式如下：
-{
-  "summary": "總結考生的主要弱點",
-  "logicGaps": ["邏輯盲點1", "邏輯盲點2"],
-  "improvementSuggestions": ["建議1", "建議2"],
-  "category": "常見弱點分類"
-}
-`;
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-    const result = await model.generateContent(prompt + '\n' + JSON.stringify(examResult));
-    const response = await result.response;
-    let text = response.text();
-    text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
-    // 只取第一個合法 JSON 物件
-    const firstJsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!firstJsonMatch) throw new Error('AI 回傳內容找不到合法 JSON');
-    try {
-      const ai = JSON.parse(firstJsonMatch[0]);
-      const weaknessAnalysis = {
-        id: uuidv4(),
-        weaknesses: ai.logicGaps || [],
-        suggestions: Array.isArray(ai.improvementSuggestions) ? ai.improvementSuggestions.join('\n') : (ai.improvementSuggestions || ''),
-        generatedAt: Date.now() / 1000 // 以秒為單位的 timestamp
-      };
-      res.json(weaknessAnalysis);
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      res.status(500).json({ error: 'Failed to parse response from AI', rawResponse: text });
-    }
-  } catch (error) {
-    console.error('Gemini API Error:', error);
-    res.status(500).json({ error: 'Failed to generate weakness analysis', message: error.message });
-  }
-});
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
