@@ -1,27 +1,29 @@
+// =====================
+// AngelReading API Server
+// =====================
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-// For Railway, it's best to use process.env.PORT, but we'll set 8080 as a fallback.
 const PORT = process.env.PORT || 8080;
 
-// --- START DEBUG LOGGING ---
+// --- DEBUG LOGGING ---
 console.log(`[DEBUG] SERVER_API_KEY on startup: ${process.env.SERVER_API_KEY}`);
 console.log(`[DEBUG] GEMINI_API_KEY on startup: ${process.env.GEMINI_API_KEY ? 'Loaded' : 'NOT LOADED'}`);
 
-// 中間件
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// Logger Middleware to see all incoming requests
+// 全域請求日誌
 app.use((req, res, next) => {
   console.log(`[INCOMING REQUEST] Method: ${req.method}, URL: ${req.originalUrl}`);
   next();
 });
-// --- END DEBUG LOGGING ---
 
-// 中間件 1: 驗證 App 是否有權限跟後端伺服器溝通
+// --- 驗證中間件 ---
 const authenticateServerKey = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
   if (apiKey && apiKey === process.env.SERVER_API_KEY) {
@@ -34,66 +36,53 @@ const authenticateServerKey = (req, res, next) => {
   }
 };
 
-// 中間件 2: 驗證從 App 端傳來的 Gemini 金鑰是否有效
 const authenticateGeminiKey = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey) {
-      next();
-    } else {
-      console.log('DEBUG: Failed authenticateGeminiKey check. No key provided.');
-      res.status(401).json({ error: '未授權 - 未提供 Gemini API Key' });
-    }
-  };
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey) {
+    next();
+  } else {
+    console.log('DEBUG: Failed authenticateGeminiKey check. No key provided.');
+    res.status(401).json({ error: '未授權 - 未提供 Gemini API Key' });
+  }
+};
 
-// 健康檢查端點
+// --- 健康檢查 ---
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
+  res.status(200).json({
+    status: 'ok',
     message: 'AngelReading API Server is running on Railway.',
     timestamp: new Date().toISOString()
   });
 });
 
-// Gemini API Key 提供端點 - 只需驗證伺服器金鑰
+// --- 金鑰 API ---
 app.get('/api/gemini-key', authenticateServerKey, (req, res) => {
   res.json({ apiKey: process.env.GEMINI_API_KEY });
 });
 
-// 測驗生成引擎端點 - 這裡應該用 Gemini 金鑰來驗證
+// --- 測驗生成 API ---
 app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
-    
-    // 從 header 獲取 Gemini key 來初始化
     const geminiApiKeyFromRequest = req.headers['x-api-key'];
     const genAI = new GoogleGenerativeAI(geminiApiKeyFromRequest);
-    
-    // 1. Get request body
     const { examType = 'TOEIC', difficulty = 'medium', timestamp, randomSeed, requestId } = req.body;
-
     if (!examType || !difficulty) {
-        return res.status(400).json({ 
-            error: 'Missing parameters',
-            message: 'Please provide examType and difficulty.' 
-        });
+      return res.status(400).json({ error: 'Missing parameters', message: 'Please provide examType and difficulty.' });
     }
-
     console.log(`[EXAM GENERATION] New request - ID: ${requestId}, Seed: ${randomSeed}, Timestamp: ${timestamp}`);
-
-    // 2. 生成主題變化的種子，確保每次都有不同的文章主題
+    // --- 主題與規則 ---
     const topicVariations = [
-        "technology and innovation", "environmental conservation", "cultural traditions", 
-        "scientific discoveries", "historical events", "social media impact", 
-        "education systems", "healthcare advancements", "business trends", 
-        "travel and tourism", "food and nutrition", "art and creativity",
-        "sports and fitness", "urban development", "climate change",
-        "artificial intelligence", "space exploration", "renewable energy",
-        "psychology and behavior", "economic development"
+      'technology and innovation', 'environmental conservation', 'cultural traditions',
+      'scientific discoveries', 'historical events', 'social media impact',
+      'education systems', 'healthcare advancements', 'business trends',
+      'travel and tourism', 'food and nutrition', 'art and creativity',
+      'sports and fitness', 'urban development', 'climate change',
+      'artificial intelligence', 'space exploration', 'renewable energy',
+      'psychology and behavior', 'economic development'
     ];
-    
     const selectedTopic = topicVariations[randomSeed % topicVariations.length];
-
-    // 2. 動態生成特定考試類型的說明
+    // --- 考試規則 ---
     let examSpecificInstructions = '';
     switch (examType) {
         case '國中會考':
@@ -374,7 +363,7 @@ Please design an English reading test for the GMAT reading comprehension section
 
     const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
 
-    // 2. Prompt Engineering: Create a detailed, structured prompt for the AI
+    // --- Prompt 組裝 ---
     const prompt = `
 You are an expert English test creator for various exams like ${examType}. Your tone should be academic, objective, and suitable for a standardized test.
 Your task is to generate a completely UNIQUE and ORIGINAL reading comprehension test based on these parameters:
@@ -435,42 +424,28 @@ The JSON object must strictly follow this structure:
 
 Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow all exam-specific rules and opening style rules strictly to ensure originality and quality.
 `;
-    
-    // 3. Call Gemini API - using the user-specified model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' }); 
+    // --- Gemini API 呼叫 ---
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let text = response.text();
-
-    // 4. Parse and respond
-    // Clean potential markdown fences just in case the AI doesn't follow instructions perfectly
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
-
     try {
-        const jsonResponse = JSON.parse(text);
-        console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
-        // Send the parsed JSON directly to the iOS app
-        res.json(jsonResponse); 
+      const jsonResponse = JSON.parse(text);
+      console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
+      res.json(jsonResponse);
     } catch (parseError) {
-        console.error('JSON parsing error:', parseError);
-        console.error('Raw text from Gemini:', text);
-        return res.status(500).json({ 
-            error: 'Failed to parse response from AI',
-            message: 'The AI did not return valid JSON.',
-            rawResponse: text // Sending raw response for debugging can be helpful
-        });
+      console.error('JSON parsing error:', parseError);
+      console.error('Raw text from Gemini:', text);
+      return res.status(500).json({ error: 'Failed to parse response from AI', message: 'The AI did not return valid JSON.', rawResponse: text });
     }
-
   } catch (error) {
     console.error('Gemini API Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate content',
-      message: error.message 
-    });
+    res.status(500).json({ error: 'Failed to generate content', message: error.message });
   }
 });
 
-// === 弱點分析模板 ===
+// --- 弱點分析模板 ---
 const WEAKNESS_TEMPLATES = [
   {
     tag: "🧠 字彙量不足",
@@ -537,7 +512,7 @@ const WEAKNESS_TEMPLATES = [
   }
 ];
 
-// 弱點分析主邏輯
+// --- 弱點分析主邏輯 ---
 function analyzeWeakness(examResults) {
   const allScores = {};
   examResults.forEach(result => {
@@ -572,7 +547,7 @@ function analyzeWeakness(examResults) {
   return { weaknesses: top3, abilityRadar };
 }
 
-// 新增弱點分析API
+// --- 弱點分析 API ---
 app.post('/api/generate-weakness-analysis', authenticateGeminiKey, (req, res) => {
   try {
     const examResults = req.body;
@@ -586,15 +561,15 @@ app.post('/api/generate-weakness-analysis', authenticateGeminiKey, (req, res) =>
   }
 });
 
-// 錯誤處理中間件
+// --- 全域錯誤處理 ---
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('伺服器發生錯誤');
 });
 
-// 404 Not Found 處理
+// --- 404 Not Found ---
 app.use('*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: '找不到請求的資源',
     availableEndpoints: [
       'GET /health',
@@ -604,7 +579,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// 啟動伺服器
+// --- 啟動伺服器 ---
 app.listen(PORT, () => {
   console.log(`伺服器正在監聽 port ${PORT}`);
 }); 
