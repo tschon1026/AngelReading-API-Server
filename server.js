@@ -470,6 +470,121 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
   }
 });
 
+// === 弱點分析模板 ===
+const WEAKNESS_TEMPLATES = [
+  {
+    tag: "🧠 字彙量不足",
+    key: "vocab",
+    icon: "📉",
+    title: "字彙量不足",
+    description: "你在本次測驗中因生字較多影響理解，建議加強單字量。",
+    suggestion: "建議你每天背5個新單字，並使用Quizlet反覆測驗。",
+    chartType: "bar"
+  },
+  {
+    tag: "🔍 主旨判斷弱",
+    key: "mainIdea",
+    icon: "🎯",
+    title: "主旨判斷弱",
+    description: "主旨題答對率偏低，建議加強抓重點能力。",
+    suggestion: "閱讀短篇文章後，自行練習寫出一句主旨句。",
+    chartType: "radar"
+  },
+  {
+    tag: "🧩 細節理解差",
+    key: "detail",
+    icon: "🧱",
+    title: "細節理解差",
+    description: "細節題答對率偏低，容易忽略原文細節。",
+    suggestion: "每題回原文畫出對應句，練習定位技巧。",
+    chartType: "bar"
+  },
+  {
+    tag: "🌀 推論推斷弱",
+    key: "inference",
+    icon: "💭",
+    title: "推論推斷弱",
+    description: "推論題表現較弱，建議多練習隱含訊息判斷。",
+    suggestion: "練習「為什麼出這題」的反思，找出線索字。",
+    chartType: "radar"
+  },
+  {
+    tag: "⛓️ 句構難理解",
+    key: "syntax",
+    icon: "🧬",
+    title: "句構難理解",
+    description: "長句或倒裝文法理解有困難，影響閱讀流暢度。",
+    suggestion: "從句子樹狀圖拆解句型，學習轉換為口語順序。",
+    chartType: "pie"
+  },
+  {
+    tag: "⏱️ 時間分配差",
+    key: "time",
+    icon: "⌛",
+    title: "時間分配差",
+    description: "作答時間分配不均，部分題目時間不足。",
+    suggestion: "使用模擬測驗訓練時間感，設定每段最多花幾分鐘。",
+    chartType: "bar"
+  },
+  {
+    tag: "📈 段落邏輯弱",
+    key: "logic",
+    icon: "🧭",
+    title: "段落邏輯弱",
+    description: "段落間邏輯關係掌握不佳，影響整體理解。",
+    suggestion: "練習文章段落標題歸納，找出連接詞用法。",
+    chartType: "flow"
+  }
+];
+
+// 弱點分析主邏輯
+function analyzeWeakness(examResults) {
+  const allScores = {};
+  examResults.forEach(result => {
+    Object.entries(result.categoryScores).forEach(([key, score]) => {
+      if (!allScores[key]) allScores[key] = [];
+      allScores[key].push(score);
+    });
+  });
+  const avgScores = Object.fromEntries(
+    Object.entries(allScores).map(([key, arr]) => [key, arr.reduce((a, b) => a + b, 0) / arr.length])
+  );
+  const sorted = Object.entries(avgScores).sort((a, b) => a[1] - b[1]);
+  const top3 = sorted.slice(0, 3).map(([key, score]) => {
+    const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
+    return template
+      ? {
+          tag: template.tag,
+          icon: template.icon,
+          title: template.title,
+          description: template.description,
+          suggestion: template.suggestion,
+          chartType: template.chartType,
+          score: Math.round(score * 100)
+        }
+      : null;
+  }).filter(Boolean);
+  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
+    key: t.key,
+    tag: t.tag,
+    score: Math.round((avgScores[t.key] ?? 0) * 100)
+  }));
+  return { weaknesses: top3, abilityRadar };
+}
+
+// 新增弱點分析API
+app.post('/api/generate-weakness-analysis', authenticateGeminiKey, (req, res) => {
+  try {
+    const examResults = req.body;
+    if (!Array.isArray(examResults) || examResults.length === 0) {
+      return res.status(400).json({ error: 'No exam results provided.' });
+    }
+    const result = analyzeWeakness(examResults);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate weakness analysis', message: error.message });
+  }
+});
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
