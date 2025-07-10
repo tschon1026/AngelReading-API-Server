@@ -432,6 +432,14 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
     text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
     try {
       const jsonResponse = JSON.parse(text);
+      // 處理 options 前綴問題：自動去除 A. B. C. 等開頭
+      if (jsonResponse.questions && Array.isArray(jsonResponse.questions)) {
+        jsonResponse.questions.forEach(q => {
+          if (q.options && Array.isArray(q.options)) {
+            q.options = q.options.map(opt => opt.replace(/^([A-Ga-g][\.|\、|\)]\s*)/, '').trim());
+          }
+        });
+      }
       console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
       res.json(jsonResponse);
     } catch (parseError) {
