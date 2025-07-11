@@ -603,8 +603,8 @@ async function analyzeWeakness(examResults, geminiApiKey) {
     })) };
   }
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
-  // 只取前三大弱點
-  const top3 = await Promise.all(sorted.slice(0, 3).map(async ([key, score]) => {
+  // 只取前四大弱點
+  const top4 = await Promise.all(sorted.slice(0, 4).map(async ([key, score]) => {
     const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
     // 收集 user 在此能力下的錯題
     let userSpecificAnalysis = '';
@@ -664,7 +664,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
       };
     });
   };
-  return { weaknesses: addIconToWeaknesses(top3.filter(Boolean)), abilityRadar };
+  return { weaknesses: addIconToWeaknesses(top4.filter(Boolean)), abilityRadar };
 }
 
 // --- 弱點分析 API ---
