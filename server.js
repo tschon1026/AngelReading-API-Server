@@ -436,7 +436,14 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
       if (jsonResponse.questions && Array.isArray(jsonResponse.questions)) {
         jsonResponse.questions.forEach(q => {
           if (q.options && Array.isArray(q.options)) {
+            // 去除選項前綴
             q.options = q.options.map(opt => opt.replace(/^([A-Ga-g][\.|\、|\)]\s*)/, '').trim());
+            // 去重
+            q.options = [...new Set(q.options)];
+            // 若去重後不足 4 個，補上干擾選項
+            while (q.options.length < 4) {
+              q.options.push('請重新生成選項');
+            }
           }
         });
       }
