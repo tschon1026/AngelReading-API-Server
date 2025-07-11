@@ -620,7 +620,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           (q.passage ? `原文段落：${q.passage}\n` : '') +
           `考生選的答案：${q.selectedAnswer}\n` +
           `正確答案：${q.correctAnswer}\n` +
-          `請分析：考生可能為何會選${q.selectedAnswer}？這反映出他在${template ? template.tag : key}上的哪些困難？請用繁體中文回答。`;
+          `請分析：考生可能為何會選${q.selectedAnswer}？這反映出他在${template ? template.tag : key}上的哪些困難？請用鼓勵的語氣並以繁體中文回答。`;
         try {
           const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
           const result = await model.generateContent(prompt);
@@ -628,9 +628,9 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           let text = await response.text();
           // 去除 markdown 標記
           text = text.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
-          return `題號${q.questionId}：AI分析：${text}`;
+          return `題號${q.questionId}：分析：${text}`;
         } catch (e) {
-          return `題號${q.questionId}：AI分析失敗。`;
+          return `題號${q.questionId}：分析失敗。`;
         }
       }));
       userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : key}」有關：\n` + analyses.join('\n');
