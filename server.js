@@ -613,7 +613,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
       // 對每個錯題呼叫 Gemini 產生分析
       const analyses = await Promise.all(wrongQuestions.map(async (q) => {
         // 組 prompt
-        let prompt = `你是一位專業英文閱讀診斷專家。請根據下列資訊，推理考生為何會在這題答錯，並將原因與「${template ? template.tag : key}」這個閱讀弱點連結，產生一段具體分析，語氣專業、精簡、具洞察力。\n` +
+        let prompt = `你是一位專業英文閱讀診斷專家，正在面對考生針對答題結果進行輔導。請根據下列資訊，推理考生為何會在這題答錯，並將原因與「${template ? template.tag : key}」這個閱讀弱點連結，產生一段具體分析，語氣專業、精簡、具洞察力。\n` +
           `【題目內容】\n` +
           `題號：${q.questionId}\n` +
           (q.questionText ? `題目：${q.questionText}\n` : '') +
