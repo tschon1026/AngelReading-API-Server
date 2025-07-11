@@ -603,6 +603,13 @@ function analyzeWeakness(examResults) {
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
   const top3 = sorted.slice(0, 3).map(([key, score]) => {
     const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
+    // 收集 user 在此能力下的錯題
+    let userSpecificAnalysis = '';
+    const wrongQuestions = examResults.flatMap(r => (r.incorrectQuestions || []).filter(q => q.category === key));
+    if (wrongQuestions.length > 0) {
+      userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : key}」有關：` +
+        wrongQuestions.map(q => `題號${q.questionId}`).join('、') + '。建議回顧這些題目的解析，理解失誤原因。';
+    }
     return template
       ? {
           tag: template.tag,
@@ -611,7 +618,8 @@ function analyzeWeakness(examResults) {
           description: template.description,
           suggestion: template.suggestion,
           chartType: template.chartType,
-          score: Math.round(score * 100)
+          score: Math.round(score * 100),
+          userSpecificAnalysis
         }
       : null;
   }).filter(Boolean);
