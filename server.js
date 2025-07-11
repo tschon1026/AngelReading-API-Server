@@ -602,8 +602,25 @@ async function analyzeWeakness(examResults, geminiApiKey) {
       score: Math.round(avgScores[t.key] ?? 0)
     })) };
   }
+  // abilityRadar 分數：若 avgScores 沒有該 key，則 score 設為 null
+  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
+    key: t.key,
+    tag: t.tag,
+    score: Object.prototype.hasOwnProperty.call(avgScores, t.key) ? Math.round(avgScores[t.key]) : null
+  }));
+  // 回傳時補上 icon 欄位
+  const addIconToWeaknesses = (weaknesses) => {
+    return weaknesses.map(w => {
+      // 從 tag 取 emoji（假設 emoji 在 tag 開頭，遇到空格結束）
+      const match = (w.tag || '').match(/^([\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+)\s?/u);
+      return {
+        ...w,
+        icon: match ? match[1] : ''
+      };
+    });
+  };
+  // top4 弱點卡片：若 score 為 null 不納入弱點卡片
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
-  // 只取前四大弱點
   const top4 = await Promise.all(sorted.slice(0, 4).map(async ([key, score]) => {
     const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
     // 收集 user 在此能力下的錯題
@@ -648,23 +665,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
         }
       : null;
   }));
-  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
-    key: t.key,
-    tag: t.tag,
-    score: Math.round(avgScores[t.key] ?? 0)
-  }));
-  // 回傳時補上 icon 欄位
-  const addIconToWeaknesses = (weaknesses) => {
-    return weaknesses.map(w => {
-      // 從 tag 取 emoji（假設 emoji 在 tag 開頭，遇到空格結束）
-      const match = (w.tag || '').match(/^([\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+)\s?/u);
-      return {
-        ...w,
-        icon: match ? match[1] : ''
-      };
-    });
-  };
-  return { weaknesses: addIconToWeaknesses(top4.filter(Boolean)), abilityRadar };
+  return { weaknesses: addIconToWeaknesses(top4.filter(w => w && w.score !== null)), abilityRadar };
 }
 
 // --- 弱點分析 API ---
