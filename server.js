@@ -620,7 +620,18 @@ function analyzeWeakness(examResults) {
     tag: t.tag,
     score: Math.round((avgScores[t.key] ?? 0) * 100)
   }));
-  return { weaknesses: top3, abilityRadar };
+  // 回傳時補上 icon 欄位
+  const addIconToWeaknesses = (weaknesses) => {
+    return weaknesses.map(w => {
+      // 從 tag 取 emoji（假設 emoji 在 tag 開頭，遇到空格結束）
+      const match = (w.tag || '').match(/^([\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+)\s?/u);
+      return {
+        ...w,
+        icon: match ? match[1] : ''
+      };
+    });
+  };
+  return { weaknesses: addIconToWeaknesses(top3), abilityRadar };
 }
 
 // --- 弱點分析 API ---
