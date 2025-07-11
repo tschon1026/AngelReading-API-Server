@@ -579,7 +579,9 @@ const WEAKNESS_TEMPLATES = [
 ];
 
 // --- 弱點分析主邏輯 ---
-function analyzeWeakness(examResults) {
+async function analyzeWeakness(examResults, geminiApiKey) {
+  const { GoogleGenerativeAI } = require('@google/generative-ai');
+  const genAI = new GoogleGenerativeAI(geminiApiKey);
   const allScores = {};
   examResults.forEach(result => {
     Object.entries(result.categoryScores).forEach(([key, score]) => {
@@ -601,14 +603,37 @@ function analyzeWeakness(examResults) {
     })) };
   }
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
-  const top3 = sorted.slice(0, 3).map(([key, score]) => {
+  // 只取前三大弱點
+  const top3 = await Promise.all(sorted.slice(0, 3).map(async ([key, score]) => {
     const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
     // 收集 user 在此能力下的錯題
     let userSpecificAnalysis = '';
     const wrongQuestions = examResults.flatMap(r => (r.incorrectQuestions || []).filter(q => q.category === key));
     if (wrongQuestions.length > 0) {
-      userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : key}」有關：` +
-        wrongQuestions.map(q => `題號${q.questionId}`).join('、') + '。建議回顧這些題目的解析，理解失誤原因。';
+      // 對每個錯題呼叫 Gemini 產生分析
+      const analyses = await Promise.all(wrongQuestions.map(async (q) => {
+        // 組 prompt
+        let prompt = `你是一位專業英文閱讀診斷專家。請根據下列資訊，推理考生為何會在這題答錯，並將原因與「${template ? template.tag : key}」這個閱讀弱點連結，產生一段具體分析，語氣專業、精簡、具洞察力。\n` +
+          `【題目內容】\n` +
+          `題號：${q.questionId}\n` +
+          (q.questionText ? `題目：${q.questionText}\n` : '') +
+          (q.passage ? `原文段落：${q.passage}\n` : '') +
+          `考生選的答案：${q.selectedAnswer}\n` +
+          `正確答案：${q.correctAnswer}\n` +
+          `請分析：考生可能為何會選${q.selectedAnswer}？這反映出他在${template ? template.tag : key}上的哪些困難？請用繁體中文回答。`;
+        try {
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          let text = await response.text();
+          // 去除 markdown 標記
+          text = text.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+          return `題號${q.questionId}：AI分析：${text}`;
+        } catch (e) {
+          return `題號${q.questionId}：AI分析失敗。`;
+        }
+      }));
+      userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : key}」有關：\n` + analyses.join('\n');
     }
     return template
       ? {
@@ -622,7 +647,7 @@ function analyzeWeakness(examResults) {
           userSpecificAnalysis
         }
       : null;
-  }).filter(Boolean);
+  }));
   const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
     key: t.key,
     tag: t.tag,
@@ -639,17 +664,18 @@ function analyzeWeakness(examResults) {
       };
     });
   };
-  return { weaknesses: addIconToWeaknesses(top3), abilityRadar };
+  return { weaknesses: addIconToWeaknesses(top3.filter(Boolean)), abilityRadar };
 }
 
 // --- 弱點分析 API ---
-app.post('/api/generate-weakness-analysis', authenticateGeminiKey, (req, res) => {
+app.post('/api/generate-weakness-analysis', authenticateGeminiKey, async (req, res) => {
   try {
     const examResults = req.body;
+    const geminiApiKeyFromRequest = req.headers['x-api-key'];
     if (!Array.isArray(examResults) || examResults.length === 0) {
       return res.status(400).json({ error: 'No exam results provided.' });
     }
-    const result = analyzeWeakness(examResults);
+    const result = await analyzeWeakness(examResults, geminiApiKeyFromRequest);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to generate weakness analysis', message: error.message });
