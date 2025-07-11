@@ -447,6 +447,24 @@ Remember: Each generation must be completely unique. Use the topic "${selectedTo
           }
         });
       }
+      // abilityTag 自動補齊
+      const defaultTags = [
+        'vocab', 'mainIdea', 'detail', 'inference', 'syntax', 'logic', 'time',
+        'tone', 'technical', 'paragraph', 'data', 'distractor'
+      ];
+      if (jsonResponse.questions && Array.isArray(jsonResponse.questions)) {
+        jsonResponse.questions.forEach((q, idx) => {
+          if (!q.abilityTag || typeof q.abilityTag !== 'string' || !q.abilityTag.trim()) {
+            // 預設循環分配
+            q.abilityTag = defaultTags[idx % defaultTags.length];
+          }
+        });
+        // 檢查所有題目 abilityTag
+        const missing = jsonResponse.questions.find(q => !q.abilityTag || typeof q.abilityTag !== 'string' || !q.abilityTag.trim());
+        if (missing) {
+          return res.status(500).json({ error: '題目 abilityTag 缺失且無法自動補齊', question: missing });
+        }
+      }
       console.log(`[EXAM GENERATION] Successfully generated unique exam for topic: ${selectedTopic}`);
       res.json(jsonResponse);
     } catch (parseError) {
@@ -465,65 +483,98 @@ const WEAKNESS_TEMPLATES = [
   {
     tag: "🧠 字彙量不足",
     key: "vocab",
-    icon: "📉",
-    title: "字彙量不足",
-    description: "你在本次測驗中因生字較多影響理解，建議加強單字量。",
-    suggestion: "建議你每天背5個新單字，並使用Quizlet反覆測驗。",
-    chartType: "bar"
+    title: "Vocabulary",
+    description: "生字太多無法理解句意",
+    suggestion: "建議每天背5個新單字，閱讀短篇文章進行應用練習。",
+    ability: ["字彙", "整體理解"]
   },
   {
     tag: "🔍 主旨判斷弱",
     key: "mainIdea",
-    icon: "🎯",
-    title: "主旨判斷弱",
-    description: "主旨題答對率偏低，建議加強抓重點能力。",
-    suggestion: "閱讀短篇文章後，自行練習寫出一句主旨句。",
-    chartType: "radar"
+    title: "Main Idea",
+    description: "無法掌握文章中心思想",
+    suggestion: "每段閱讀完先寫一句中心句，再總結全文重點。",
+    ability: ["主旨理解", "歸納"]
   },
   {
-    tag: "🧩 細節理解差",
+    tag: "🧩 細節定位差",
     key: "detail",
-    icon: "🧱",
-    title: "細節理解差",
-    description: "細節題答對率偏低，容易忽略原文細節。",
-    suggestion: "每題回原文畫出對應句，練習定位技巧。",
-    chartType: "bar"
+    title: "Detail Matching",
+    description: "對題目細節無法對應原文",
+    suggestion: "建議畫出關鍵句並圈出對應線索，練習尋找定位詞。",
+    ability: ["細節理解"]
   },
   {
-    tag: "🌀 推論推斷弱",
+    tag: "🌀 推論能力弱",
     key: "inference",
-    icon: "💭",
-    title: "推論推斷弱",
-    description: "推論題表現較弱，建議多練習隱含訊息判斷。",
-    suggestion: "練習「為什麼出這題」的反思，找出線索字。",
-    chartType: "radar"
+    title: "Inference",
+    description: "隱含訊息、態度難掌握",
+    suggestion: "練習觀察語氣詞（如 must, likely），推測語意。",
+    ability: ["推論", "隱含訊息"]
   },
   {
-    tag: "⛓️ 句構難理解",
+    tag: "⛓️ 句構難解",
     key: "syntax",
-    icon: "🧬",
-    title: "句構難理解",
-    description: "長句或倒裝文法理解有困難，影響閱讀流暢度。",
-    suggestion: "從句子樹狀圖拆解句型，學習轉換為口語順序。",
-    chartType: "pie"
+    title: "Sentence Structure",
+    description: "長句、倒裝句閱讀困難",
+    suggestion: "拆解句子成片語再組合，學會轉換為口語語序。",
+    ability: ["文法結構", "理解"]
+  },
+  {
+    tag: "🔗 連貫性差",
+    key: "logic",
+    title: "Coherence / Cohesion",
+    description: "無法理解段落銜接、邏輯",
+    suggestion: "練習找出段與段之間的連接詞與主題句。",
+    ability: ["段落邏輯"]
   },
   {
     tag: "⏱️ 時間分配差",
     key: "time",
-    icon: "⌛",
-    title: "時間分配差",
-    description: "作答時間分配不均，部分題目時間不足。",
-    suggestion: "使用模擬測驗訓練時間感，設定每段最多花幾分鐘。",
-    chartType: "bar"
+    title: "Time Management",
+    description: "太久卡在一題或未完成",
+    suggestion: "模擬練習每篇設定答題時間，提升閱讀節奏感。",
+    ability: ["策略與流程控制"]
   },
   {
-    tag: "📈 段落邏輯弱",
-    key: "logic",
-    icon: "🧭",
-    title: "段落邏輯弱",
-    description: "段落間邏輯關係掌握不佳，影響整體理解。",
-    suggestion: "練習文章段落標題歸納，找出連接詞用法。",
-    chartType: "flow"
+    tag: "🎭 對作者態度不明",
+    key: "tone",
+    title: "Tone/Attitude",
+    description: "判斷不出作者正反語氣",
+    suggestion: "建議熟悉表示情緒的形容詞與副詞如 skeptical, supportive。",
+    ability: ["推論", "態度判讀"]
+  },
+  {
+    tag: "📚 專有名詞困難",
+    key: "technical",
+    title: "Technical Terms",
+    description: "特定領域單字無法理解",
+    suggestion: "建議分類記憶商業/科學/人文類常見術語。",
+    ability: ["學術英文適應"]
+  },
+  {
+    tag: "🧭 段落組織混亂",
+    key: "paragraph",
+    title: "Paragraph Structure",
+    description: "無法理解段內層次與功能",
+    suggestion: "練習標示每段功能：例子、定義、轉折、因果等。",
+    ability: ["段落結構理解"]
+  },
+  {
+    tag: "🧮 數字資訊錯誤",
+    key: "data",
+    title: "Data Interpretation",
+    description: "表格/數據/比較題答錯",
+    suggestion: "熟悉圖表閱讀技巧與數據關鍵字 like increase, double 等。",
+    ability: ["資料分析"]
+  },
+  {
+    tag: "❓ 選項陷阱誤判",
+    key: "distractor",
+    title: "Distractor Trap",
+    description: "易受錯誤選項誤導",
+    suggestion: "建議練習「找選項陷阱」，注意極端字詞、無根據資訊。",
+    ability: ["試題理解與判別力"]
   }
 ];
 
