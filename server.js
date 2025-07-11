@@ -582,6 +582,13 @@ const WEAKNESS_TEMPLATES = [
 async function analyzeWeakness(examResults, geminiApiKey) {
   const { GoogleGenerativeAI } = require('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(geminiApiKey);
+  // 收集本次所有題目的 abilityTag
+  const appearedAbilities = new Set();
+  examResults.forEach(result => {
+    (result.questions || []).forEach(q => {
+      if (q.abilityTag) appearedAbilities.add(q.abilityTag);
+    });
+  });
   const allScores = {};
   examResults.forEach(result => {
     Object.entries(result.categoryScores).forEach(([key, score]) => {
@@ -592,15 +599,17 @@ async function analyzeWeakness(examResults, geminiApiKey) {
   const avgScores = Object.fromEntries(
     Object.entries(allScores).map(([key, arr]) => [key, arr.reduce((a, b) => a + b, 0) / arr.length])
   );
-  // 只挑出有失分的能力（分數 < 3）
-  const filtered = Object.entries(avgScores).filter(([key, score]) => score < 3);
+  // abilityRadar 分數修正：沒出現的能力直接給3分
+  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
+    key: t.key,
+    tag: t.tag,
+    score: appearedAbilities.has(t.key) ? Math.round(avgScores[t.key] ?? 0) : 3
+  }));
+  // 只挑出有失分的能力（分數 < 3，且本次有出現）
+  const filtered = Object.entries(avgScores).filter(([key, score]) => score < 3 && appearedAbilities.has(key));
   if (filtered.length === 0) {
     // 全部滿分，無弱點
-    return { weaknesses: [], abilityRadar: WEAKNESS_TEMPLATES.map(t => ({
-      key: t.key,
-      tag: t.tag,
-      score: Math.round(avgScores[t.key] ?? 0)
-    })) };
+    return { weaknesses: [], abilityRadar };
   }
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
   // 只取前四大弱點
@@ -647,11 +656,6 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           userSpecificAnalysis
         }
       : null;
-  }));
-  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
-    key: t.key,
-    tag: t.tag,
-    score: Math.round(avgScores[t.key] ?? 0)
   }));
   // 回傳時補上 icon 欄位
   const addIconToWeaknesses = (weaknesses) => {
