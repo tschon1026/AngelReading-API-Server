@@ -599,7 +599,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
     return { weaknesses: [], abilityRadar: WEAKNESS_TEMPLATES.map(t => ({
       key: t.key,
       tag: t.tag,
-      score: Math.round((avgScores[t.key] ?? 0) * 100)
+      score: Math.round(avgScores[t.key] ?? 0)
     })) };
   }
   const sorted = filtered.sort((a, b) => a[1] - b[1]);
@@ -643,7 +643,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           description: template.description,
           suggestion: template.suggestion,
           chartType: template.chartType,
-          score: Math.round(score * 100),
+          score: Math.round(score),
           userSpecificAnalysis
         }
       : null;
@@ -651,7 +651,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
   const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
     key: t.key,
     tag: t.tag,
-    score: Math.round((avgScores[t.key] ?? 0) * 100)
+    score: Math.round(avgScores[t.key] ?? 0)
   }));
   // 回傳時補上 icon 欄位
   const addIconToWeaknesses = (weaknesses) => {
