@@ -589,35 +589,34 @@ async function analyzeWeakness(examResults, geminiApiKey) {
       if (q.abilityTag) appearedAbilities.add(q.abilityTag);
     });
   });
-  const allScores = {};
+  // === 新增：統計每個 abilityTag 的錯誤次數 ===
+  const abilityErrorCount = {};
   examResults.forEach(result => {
-    Object.entries(result.categoryScores).forEach(([key, score]) => {
-      if (!allScores[key]) allScores[key] = [];
-      allScores[key].push(score);
+    (result.incorrectQuestions || []).forEach(q => {
+      if (q.category) {
+        abilityErrorCount[q.category] = (abilityErrorCount[q.category] || 0) + 1;
+      }
     });
   });
-  const avgScores = Object.fromEntries(
-    Object.entries(allScores).map(([key, arr]) => [key, arr.reduce((a, b) => a + b, 0) / arr.length])
-  );
-  // abilityRadar 分數修正：沒出現的能力直接給3分
+  // === abilityRadar 分數依新規則 ===
   const abilityRadar = WEAKNESS_TEMPLATES.map(t => {
     // 檢查本次有沒有該能力的題目
-    const hasAbility = typeof avgScores[t.key] !== 'undefined';
-    // 檢查本次有沒有該能力的錯題
-    const hasWrong = examResults.some(r =>
-      (r.incorrectQuestions || []).some(q => q.category === t.key)
+    const hasAbility = examResults.some(r =>
+      (r.questions || []).some(q => q.abilityTag === t.key)
     );
+    const errorCount = abilityErrorCount[t.key] || 0;
     let score = 3;
     if (hasAbility) {
-      if (hasWrong) {
-        // 有該能力且有錯題，維持原本分數
-        score = Math.round(avgScores[t.key] ?? 0);
+      if (errorCount > 3) {
+        score = 0;
+      } else if (errorCount > 2) {
+        score = 1;
+      } else if (errorCount === 1) {
+        score = 2;
       } else {
-        // 有該能力但沒錯題，給3分
         score = 3;
       }
     } else {
-      // 沒有該能力，給3分
       score = 3;
     }
     return {
@@ -627,30 +626,31 @@ async function analyzeWeakness(examResults, geminiApiKey) {
     };
   });
   // 只挑出有失分的能力（分數 < 3，且本次有出現）
-  const filtered = Object.entries(avgScores).filter(([key, score]) => score < 3 && appearedAbilities.has(key));
+  const filtered = abilityRadar.filter(a => a.score < 3 && appearedAbilities.has(a.key));
   if (filtered.length === 0) {
     // 全部滿分，無弱點
     return { weaknesses: [], abilityRadar };
   }
-  const sorted = filtered.sort((a, b) => a[1] - b[1]);
+  // 依分數排序（低分優先）
+  const sorted = filtered.sort((a, b) => a.score - b.score);
   // 只取前四大弱點
-  const top4 = await Promise.all(sorted.slice(0, 4).map(async ([key, score]) => {
-    const template = WEAKNESS_TEMPLATES.find(t => t.key === key);
+  const top4 = await Promise.all(sorted.slice(0, 4).map(async (a) => {
+    const template = WEAKNESS_TEMPLATES.find(t => t.key === a.key);
     // 收集 user 在此能力下的錯題
     let userSpecificAnalysis = '';
-    const wrongQuestions = examResults.flatMap(r => (r.incorrectQuestions || []).filter(q => q.category === key));
+    const wrongQuestions = examResults.flatMap(r => (r.incorrectQuestions || []).filter(q => q.category === a.key));
     if (wrongQuestions.length > 0) {
       // 對每個錯題呼叫 Gemini 產生分析
       const analyses = await Promise.all(wrongQuestions.map(async (q) => {
         // 組 prompt
-        let prompt = `你是一位專業英文閱讀診斷專家，正在面對考生針對答題結果進行輔導。請根據下列資訊，推理考生為何會在這題答錯，並將原因與「${template ? template.tag : key}」這個閱讀弱點連結，產生一段具體分析，語氣專業、精簡、具洞察力。\n` +
+        let prompt = `你是一位專業英文閱讀診斷專家，正在面對考生針對答題結果進行輔導。請根據下列資訊，推理考生為何會在這題答錯，並將原因與「${template ? template.tag : a.key}」這個閱讀弱點連結，產生一段具體分析，語氣專業、精簡、具洞察力。\n` +
           `【題目內容】\n` +
           `題號：${q.questionId}\n` +
           (q.questionText ? `題目：${q.questionText}\n` : '') +
           (q.passage ? `原文段落：${q.passage}\n` : '') +
           `考生選的答案：${q.selectedAnswer}\n` +
           `正確答案：${q.correctAnswer}\n` +
-          `請分析：考生可能為何會選${q.selectedAnswer}？這反映出他在${template ? template.tag : key}上的哪些困難？請用鼓勵的語氣並以繁體中文回答。`;
+          `請分析：考生可能為何會選${q.selectedAnswer}？這反映出他在${template ? template.tag : a.key}上的哪些困難？請用鼓勵的語氣並以繁體中文回答。`;
         try {
           const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
           const result = await model.generateContent(prompt);
@@ -663,7 +663,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           return `題號${q.questionId}：分析失敗。`;
         }
       }));
-      userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : key}」有關：\n` + analyses.join('\n');
+      userSpecificAnalysis = `你在本次測驗中，以下題目錯誤與「${template ? template.tag : a.key}」有關：\n` + analyses.join('\n');
     }
     return template
       ? {
@@ -673,7 +673,7 @@ async function analyzeWeakness(examResults, geminiApiKey) {
           description: template.description,
           suggestion: template.suggestion,
           chartType: template.chartType,
-          score: Math.round(score),
+          score: a.score,
           userSpecificAnalysis
         }
       : null;
