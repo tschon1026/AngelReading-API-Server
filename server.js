@@ -600,11 +600,32 @@ async function analyzeWeakness(examResults, geminiApiKey) {
     Object.entries(allScores).map(([key, arr]) => [key, arr.reduce((a, b) => a + b, 0) / arr.length])
   );
   // abilityRadar 分數修正：沒出現的能力直接給3分
-  const abilityRadar = WEAKNESS_TEMPLATES.map(t => ({
-    key: t.key,
-    tag: t.tag,
-    score: appearedAbilities.has(t.key) ? Math.round(avgScores[t.key] ?? 0) : 3
-  }));
+  const abilityRadar = WEAKNESS_TEMPLATES.map(t => {
+    // 檢查本次有沒有該能力的題目
+    const hasAbility = typeof avgScores[t.key] !== 'undefined';
+    // 檢查本次有沒有該能力的錯題
+    const hasWrong = examResults.some(r =>
+      (r.incorrectQuestions || []).some(q => q.category === t.key)
+    );
+    let score = 3;
+    if (hasAbility) {
+      if (hasWrong) {
+        // 有該能力且有錯題，維持原本分數
+        score = Math.round(avgScores[t.key] ?? 0);
+      } else {
+        // 有該能力但沒錯題，給3分
+        score = 3;
+      }
+    } else {
+      // 沒有該能力，給3分
+      score = 3;
+    }
+    return {
+      key: t.key,
+      tag: t.tag,
+      score
+    };
+  });
   // 只挑出有失分的能力（分數 < 3，且本次有出現）
   const filtered = Object.entries(avgScores).filter(([key, score]) => score < 3 && appearedAbilities.has(key));
   if (filtered.length === 0) {
