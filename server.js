@@ -84,6 +84,19 @@ app.post('/api/generate-exam', authenticateGeminiKey, async (req, res) => {
     const selectedTopic = topicVariations[randomSeed % topicVariations.length];
     // --- 考試規則 ---
     let examSpecificInstructions = '';
+    let questionCount = 5; // 預設 5 題
+    switch (examType) {
+        case 'TOEFL':
+        case 'IELTS':
+        case 'SAT':
+        case 'GRE':
+        case 'GMAT':
+            questionCount = 6;
+            break;
+        default:
+            questionCount = 5;
+            break;
+    }
     switch (examType) {
         case '國中會考':
             examSpecificInstructions = `
@@ -363,6 +376,16 @@ Please design an English reading test for the GMAT reading comprehension section
 
     const dateVariation = new Date(timestamp * 1000).toISOString().slice(0, 10);
 
+    // --- 動態產生 JSON 範例 ---
+    let questionsExample = '';
+    for (let i = 1; i <= questionCount; i++) {
+      questionsExample += `{ "id": ${i}, "questionText": "Question ${i}...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} }${i < questionCount ? ',' : ''}\n`;
+    }
+    const jsonExample = `{
+  "passage": "The full reading passage text here.",
+  "questions": [
+    ${questionsExample}  ]
+}`;
     // --- Prompt 組裝 ---
     const prompt = `
 You are an expert English test creator for various exams like ${examType}. Your tone should be academic, objective, and suitable for a standardized test.
@@ -389,7 +412,7 @@ Please generate the reading passage following the rules above.
 Each paragraph MUST start with two spaces for indentation.
 Paragraphs MUST be separated by a single blank line.
 
-After the passage, create exactly 5 multiple-choice questions related to the passage.
+After the passage, create exactly ${questionCount} multiple-choice questions related to the passage.
 Each question must have 4 options.
 
 For each question, you MUST provide a detailed analysis in **繁體中文 (Traditional Chinese)** for EVERY option. Each analysis MUST:
@@ -400,27 +423,7 @@ For each question, you MUST provide a detailed analysis in **繁體中文 (Tradi
 The entire response MUST be a single, minified, valid JSON object.
 Do not include any markdown fences like \`\`\`json or any other explanatory text.
 The JSON object must strictly follow this structure:
-{
-  "passage": "The full reading passage text here.",
-  "questions": [
-    { 
-      "id": 1, 
-      "questionText": "Question 1...", 
-      "options": ["A", "B", "C", "D"], 
-      "correctAnswer": "A",
-      "optionAnalyses": {
-        "A": "根據第X段第Y行「原文引用」，...",
-        "B": "根據第X段第Y行「原文引用」，...",
-        "C": "根據第X段第Y行「原文引用」，...",
-        "D": "根據第X段第Y行「原文引用」，..."
-      }
-    },
-    { "id": 2, "questionText": "Question 2...", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
-    { "id": 3, "questionText": "Question 3...", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
-    { "id": 4, "questionText": "Question 4...", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} },
-    { "id": 5, "questionText": "Question 5...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "optionAnalyses": {"A": "根據第X段第Y行「原文引用」，...", "B": "根據第X段第Y行「原文引用」，...", "C": "根據第X段第Y行「原文引用」，...", "D": "根據第X段第Y行「原文引用」，..."} }
-  ]
-}
+${jsonExample}
 
 Remember: Each generation must be completely unique. Use the topic "${selectedTopic}" creatively and follow all exam-specific rules and opening style rules strictly to ensure originality and quality.
 `;
